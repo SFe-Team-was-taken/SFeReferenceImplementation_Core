@@ -95,10 +95,11 @@ class BasicSoundBank
     }
     
     /**
-     * Creates a simple soundfont with one saw wave preset.
+     * Creates a simple soundfont/SFe bank with one saw wave preset.
+     * @param version {number} - SF version of bank to create
      * @returns {ArrayBufferLike}
      */
-    static getDummySoundfontFile()
+    static getDummySFBank(version)
     {
         const font = new BasicSoundBank();
         const sample = new BasicSample(
@@ -146,9 +147,25 @@ class BasicSoundBank
         preset.presetName = "Saw Wave";
         preset.presetZones.push(pZone);
         font.presets.push(preset);
-        
-        font.soundFontInfo["ifil"] = "2.1";
-        font.soundFontInfo["isng"] = "EMU8000";
+        switch (version) 
+        {
+            case 2:
+                font.soundFontInfo["ifil"] = "2.1";
+                font.soundFontInfo["isng"] = "EMU8000";
+                break;
+            case 3:
+                console.warn("Creation of SF3 banks is not yet supported. Creating an SF2 bank instead.");
+                font.soundFontInfo["ifil"] = "2.1";
+                font.soundFontInfo["isng"] = "EMU8000";
+                break;
+            case 4:
+                console.warn("Creation of SFe banks is not yet supported. Creating an SF2 bank instead.");
+                font.soundFontInfo["ifil"] = "2.1";
+                font.soundFontInfo["isng"] = "EMU8000";
+                break;
+            default:
+                console.warn("Invalid bank version! Creating an SF2 bank instead.");
+        }
         font.soundFontInfo["INAM"] = "Dummy";
         font._parseInternal();
         return font.write().buffer;
