@@ -26,6 +26,12 @@ class BasicSoundBank
     soundFontInfo = {};
     
     /**
+     * SFe info stored as name: value.
+     * @type {Object<string, string|IndexedByteArray>}
+     */
+    sfeInfo = {};
+
+    /**
      * The soundfont's presets
      * @type {BasicPreset[]}
      */
