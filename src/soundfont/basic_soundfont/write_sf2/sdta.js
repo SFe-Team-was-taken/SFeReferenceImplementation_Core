@@ -24,13 +24,13 @@ export function getSDTA(smplStartOffsets, smplEndOffsets, compress, quality, vor
         }
         const r = s.getRawData();
         SpessaSynthInfo(
-            `%cEncoded sample %c${i}. ${s.sampleName}%c of %c${this.samples.length}%c. Compressed: %c${s.isCompressed}%c.`,
+            `%cEncoded sample %c${i}. ${s.sampleName}%c of %c${this.samples.length}%c. Containerised/compressed: %c${s.isContainerised}%c.`,
             consoleColors.info,
             consoleColors.recognized,
             consoleColors.info,
             consoleColors.recognized,
             consoleColors.info,
-            s.isCompressed ? consoleColors.recognized : consoleColors.unrecognized,
+            s.isContainerised ? consoleColors.recognized : consoleColors.unrecognized,
             consoleColors.info
         );
         return r;
@@ -47,7 +47,7 @@ export function getSDTA(smplStartOffsets, smplEndOffsets, compress, quality, vor
         let startOffset;
         let endOffset;
         let jump = data.length;
-        if (sample.isCompressed)
+        if (sample.isContainerised)
         {
             // sf3 offset is in bytes
             startOffset = smplData.currentIndex;

@@ -61,7 +61,7 @@ export class SoundFontSample extends BasicSample
         this.sampleLength = this.sampleEndIndex - this.sampleStartIndex;
         this.sampleDataArray = smplArr;
         this.sampleData = new Float32Array(0);
-        if (this.isCompressed)
+        if (this.isContainerised)
         {
             // correct loop points
             this.sampleLoopStartIndex += this.sampleStartIndex / 2;
@@ -78,11 +78,11 @@ export class SoundFontSample extends BasicSample
     getRawData()
     {
         const smplArr = this.sampleDataArray;
-        if (this.isCompressed)
+        if (this.isContainerised)
         {
-            if (this.compressedData)
+            if (this.containerisedData)
             {
-                return this.compressedData;
+                return this.containerisedData;
             }
             const smplStart = smplArr.currentIndex;
             return smplArr.slice(this.sampleStartIndex / 2 + smplStart, this.sampleEndIndex / 2 + smplStart);
@@ -150,12 +150,42 @@ export class SoundFontSample extends BasicSample
                 return new Float32Array(1);
             }
             
-            if (this.isCompressed)
+            if (this.isContainerised) 
             {
-                // if compressed, decode
-                this.decodeVorbis();
-                this.isSampleLoaded = true;
-                return this.sampleData;
+
+                let rawData = this.getRawData();
+                let fourcc = readBytesAsString(rawData, 4);
+                if (fourcc == "OggS")
+                {
+                    let oggHeader = readBytesAsString(rawData, 23);
+                    let pageSegs = rawData[26];
+                    let segTable = readBytesAsString(rawData, pageSegs);
+                    let formatID = rawData.slice(27+pageSegs,37+pageSegs); // Todo: replace with proper identification of vorbis format
+                    // SpessaSynthWarn(formatID);
+                    if (formatID[0] == 1)
+                    {
+                        let formatIDTrimmed = formatID.slice(1, 10);
+                        let formatIDString = readBytesAsString(formatIDTrimmed, 6);
+                        if (formatIDString == "vorbis")
+                        {
+                            this.compressionType = 1;
+                        } 
+                    } else if (formatID.slice(0, 8) == "OpusHead")
+                    {
+                        this.compressionType = 2;
+                    } // Flac and wav detection later
+                }
+                if (this.compressionType == 1)
+                {
+                    // if compressed, decode
+                    this.decodeVorbis();
+                    this.isSampleLoaded = true;
+                    return this.sampleData;
+                } else 
+                {
+                    SpessaSynthWarn(`Invalid sample ${this.sampleName}! Invalid length: ${this.sampleLength}, compression type: ${this.compressionType}`);
+                    return new Float32Array(1);
+                }
             }
             else if (!this.isDataRaw)
             {
@@ -171,9 +201,9 @@ export class SoundFontSample extends BasicSample
      */
     loadUncompressedData()
     {
-        if (this.isCompressed)
+        if (this.isContainerised)
         {
-            SpessaSynthWarn("Trying to load a compressed sample via loadUncompressedData()... aborting!");
+            SpessaSynthWarn("Trying to load a containerised sample via loadUncompressedData()... aborting!");
             return new Float32Array(0);
         }
         

@@ -69,16 +69,24 @@ export class BasicSample
     sampleLoopEndIndex;
     
     /**
-     * Indicates if the sample is compressed
+     * Indicates if the sample is containerised or compressed
      * @type {boolean}
      */
-    isCompressed;
+    isContainerised;
     
     /**
-     * The compressed sample data if it was compressed by spessasynth
+     * Type of compression used
+     * 0 = WAV, 1 = Vorbis, 2 = Opus, 3 = FLAC
+     * Only 1 is currently implemented
+     * @type {string}
+     */
+    compressionType;
+
+    /**
+     * The sample data if it was compressed/containerised by spessasynth
      * @type {Uint8Array}
      */
-    compressedData = undefined;
+    containerisedData = undefined;
     
     /**
      * The sample's use count
@@ -123,7 +131,8 @@ export class BasicSample
         this.sampleLoopStartIndex = loopStart;
         this.sampleLoopEndIndex = loopEnd;
         // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
-        this.isCompressed = (sampleType & 0x10) > 0;
+        this.compressionType = "invalid";
+        this.isContainerised = (sampleType & 0x10) > 0;
     }
     
     
@@ -166,7 +175,7 @@ export class BasicSample
     compressSample(quality, encodeVorbis)
     {
         // no need to compress
-        if (this.isCompressed)
+        if (this.isContainerised && this.compressionType != 0)
         {
             return;
         }
@@ -180,17 +189,18 @@ export class BasicSample
                 this.resampleData(RESAMPLE_RATE);
                 audioData = this.getAudioData();
             }
-            this.compressedData = encodeVorbis([audioData], 1, this.sampleRate, quality);
-            // flag as compressed
+            this.containerisedData = encodeVorbis([audioData], 1, this.sampleRate, quality);
+            // flag as containerised and compressed with Vorbis 
             this.sampleType |= 0x10;
-            this.isCompressed = true;
+            this.isContainerised = true;
+            this.compressionType = 1;
         }
         catch (e)
         {
             SpessaSynthWarn(`Failed to compress ${this.sampleName}. Leaving as uncompressed!`);
-            this.isCompressed = false;
-            this.compressedData = undefined;
-            // flag as uncompressed
+            this.isContainerised = false;
+            this.containerisedData = undefined;
+            // flag as uncontainerised
             this.sampleType &= 0xEF;
         }
         

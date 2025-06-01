@@ -39,8 +39,8 @@ export function writeDLSSample(sample)
     );
     const audio = sample.getAudioData();
     let data;
-    // if sample is compressed, getRawData cannot be used
-    if (sample.isCompressed)
+    // if sample is compressed or containerised, getRawData cannot be used
+    if (sample.isContainerised)
     {
         const data16 = new Int16Array(audio.length);
         

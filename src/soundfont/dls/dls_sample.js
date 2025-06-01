@@ -54,13 +54,13 @@ export class DLSSample extends BasicSample
     
     getRawData()
     {
-        if (this.isCompressed)
+        if (this.isContainerised)
         {
-            if (!this.compressedData)
+            if (!this.containerisedData)
             {
-                throw new Error("Compressed but no data?? This shouldn't happen!!");
+                throw new Error("Containerised or compressed, but no data?? This shouldn't happen!!");
             }
-            return this.compressedData;
+            return this.containerisedData;
         }
         return super.getRawData();
         // const uint8 = new Uint8Array(this.sampleData.length * 2);
