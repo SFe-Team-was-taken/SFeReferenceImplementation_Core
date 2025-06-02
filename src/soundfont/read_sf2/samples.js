@@ -161,16 +161,17 @@ export class SoundFontSample extends BasicSample
                     let pageSegs = rawData[26];
                     let segTable = readBytesAsString(rawData, pageSegs);
                     let formatID = rawData.slice(27+pageSegs,37+pageSegs); // Todo: replace with proper identification of vorbis format
+                    let formatIDTrimmed = formatID.slice(1, 10);
+                    let formatIDString = readBytesAsString(formatID, 10);
+                    let formatIDStringTrimmed = readBytesAsString(formatIDTrimmed, 9);
                     // SpessaSynthWarn(formatID);
                     if (formatID[0] == 1)
                     {
-                        let formatIDTrimmed = formatID.slice(1, 10);
-                        let formatIDString = readBytesAsString(formatIDTrimmed, 6);
-                        if (formatIDString == "vorbis")
+                        if (formatIDStringTrimmed.slice(0, 6) == "vorbis")
                         {
                             this.compressionType = 1;
                         } 
-                    } else if (formatID.slice(0, 8) == "OpusHead")
+                    } else if (formatIDString.slice(0, 8) == "OpusHead")
                     {
                         this.compressionType = 2;
                     } // Flac and wav detection later
@@ -183,7 +184,7 @@ export class SoundFontSample extends BasicSample
                     return this.sampleData;
                 } else 
                 {
-                    SpessaSynthWarn(`Invalid sample ${this.sampleName}! Invalid length: ${this.sampleLength}, compression type: ${this.compressionType}`);
+                    SpessaSynthWarn(`Invalid sample ${this.sampleName}! (Invalid) length: ${this.sampleLength}, compression type ID: ${this.compressionType}`);
                     return new Float32Array(1);
                 }
             }

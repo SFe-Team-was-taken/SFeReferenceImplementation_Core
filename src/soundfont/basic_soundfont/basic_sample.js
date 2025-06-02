@@ -77,8 +77,9 @@ export class BasicSample
     /**
      * Type of compression used
      * 0 = WAV, 1 = Vorbis, 2 = Opus, 3 = FLAC
+     * Invalid/uninitialised value is represented by -1
      * Only 1 is currently implemented
-     * @type {string}
+     * @type {number}
      */
     compressionType;
 
@@ -131,7 +132,7 @@ export class BasicSample
         this.sampleLoopStartIndex = loopStart;
         this.sampleLoopEndIndex = loopEnd;
         // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
-        this.compressionType = "invalid";
+        this.compressionType = -1;
         this.isContainerised = (sampleType & 0x10) > 0;
     }
     
