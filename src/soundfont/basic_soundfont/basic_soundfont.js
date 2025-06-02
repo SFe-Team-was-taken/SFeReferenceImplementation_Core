@@ -56,6 +56,12 @@ class BasicSoundBank
     defaultModulators = defaultModulators.map(m => Modulator.copy(m));
     
     /**
+     * If the bank has custom default modulators (DMOD).
+     * @type {boolean}
+     */
+    customDefaultModulators = false;
+    
+    /**
      * Checks for XG drumsets and considers if this soundfont is XG.
      * @type {boolean}
      */
