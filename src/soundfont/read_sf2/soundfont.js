@@ -11,7 +11,7 @@ import { consoleColors } from "../../utils/other.js";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_sync.min.js";
-import { BasicSoundBank } from "../basic_soundfont/basic_soundfont.js";
+import { BasicSoundBank } from "../basic_soundfont/basic_soundbank.js";
 import { Generator } from "../basic_soundfont/generator.js";
 import { Modulator } from "../basic_soundfont/modulator.js";
 import { loadSFeInfo } from "./sfe_info.js";
@@ -462,7 +462,6 @@ export class SoundFont2 extends BasicSoundBank
          * @type {Modulator[]}
          */
         let instrumentModulators = readModulators(presetInstrumentModulatorsChunk);
-        
         /**
          * read all the instrument zones
          * @type {InstrumentZone[]}
@@ -490,9 +489,8 @@ export class SoundFont2 extends BasicSoundBank
         
         let presetZones = readPresetZones(presetZonesChunk, presetGenerators, presetModulators, this.instruments);
         
-        this.presets.push(...readPresets(presetHeadersChunk, presetZones, this));
-        this.presets.sort((a, b) => (a.program - b.program) + (a.bank - b.bank));
-        this._parseInternal();
+        this.addPresets(...readPresets(presetHeadersChunk, presetZones, this));
+        this.flush();
         SpessaSynthInfo(
             `%cParsing finished! %c"${this.soundFontInfo["INAM"]}"%c has %c${this.presets.length} %cpresets,
         %c${this.instruments.length}%c instruments and %c${this.samples.length}%c samples.`,

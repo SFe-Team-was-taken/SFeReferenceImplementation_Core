@@ -1,9 +1,11 @@
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
 import { RiffChunk } from "../basic_soundfont/riff_chunk.js";
-import { BasicInstrumentZone, BasicPresetZone } from "../basic_soundfont/basic_zones.js";
-import { Generator, generatorTypes } from "../basic_soundfont/generator.js";
+import { BasicPresetZone } from "../basic_soundfont/basic_preset_zone.js";
+import { Generator } from "../basic_soundfont/generator.js";
 import { Modulator } from "../basic_soundfont/modulator.js";
+import { generatorTypes } from "../basic_soundfont/generator_types.js";
+import { BasicInstrumentZone } from "../basic_soundfont/basic_instrument_zone.js";
 
 /**
  * zones.js
@@ -23,7 +25,6 @@ export class InstrumentZone extends BasicInstrumentZone
         this.modulatorZoneStartIndex = readLittleEndian(dataArray, 2);
         this.modulatorZoneSize = 0;
         this.generatorZoneSize = 0;
-        this.isGlobal = true;
     }
     
     setZoneSize(modulatorZoneSize, generatorZoneSize)
@@ -40,7 +41,12 @@ export class InstrumentZone extends BasicInstrumentZone
     {
         for (let i = this.generatorZoneStartIndex; i < this.generatorZoneStartIndex + this.generatorZoneSize; i++)
         {
-            this.generators.push(generators[i]);
+            const g = generators[i];
+            if (!g)
+            {
+                throw new Error("Missing generator in instrument zone! The file may corrupted.");
+            }
+            this.addGenerators(g);
         }
     }
     
@@ -52,7 +58,12 @@ export class InstrumentZone extends BasicInstrumentZone
     {
         for (let i = this.modulatorZoneStartIndex; i < this.modulatorZoneStartIndex + this.modulatorZoneSize; i++)
         {
-            this.modulators.push(modulators[i]);
+            const m = modulators[i];
+            if (!m)
+            {
+                throw new Error("Missing modulator in instrument zone! The file may corrupted.");
+            }
+            this.addModulators(m);
         }
     }
     
@@ -65,35 +76,7 @@ export class InstrumentZone extends BasicInstrumentZone
         let sampleID = this.generators.find(g => g.generatorType === generatorTypes.sampleID);
         if (sampleID)
         {
-            this.sample = samples[sampleID.generatorValue];
-            this.isGlobal = false;
-            this.sample.useCount++;
-        }
-    }
-    
-    /**
-     * Reads the keyRange of the zone
-     */
-    getKeyRange()
-    {
-        let range = this.generators.find(g => g.generatorType === generatorTypes.keyRange);
-        if (range)
-        {
-            this.keyRange.min = range.generatorValue & 0x7F;
-            this.keyRange.max = (range.generatorValue >> 8) & 0x7F;
-        }
-    }
-    
-    /**
-     * reads the velolicty range of the zone
-     */
-    getVelRange()
-    {
-        let range = this.generators.find(g => g.generatorType === generatorTypes.velRange);
-        if (range)
-        {
-            this.velRange.min = range.generatorValue & 0x7F;
-            this.velRange.max = (range.generatorValue >> 8) & 0x7F;
+            this.setSample(samples[sampleID.generatorValue]);
         }
     }
 }
@@ -123,8 +106,6 @@ export function readInstrumentZones(zonesChunk, instrumentGenerators, instrument
             zones[zones.length - 1].getGenerators(instrumentGenerators);
             zones[zones.length - 1].getModulators(instrumentModulators);
             zones[zones.length - 1].getSample(instrumentSamples);
-            zones[zones.length - 1].getKeyRange();
-            zones[zones.length - 1].getVelRange();
         }
         zones.push(zone);
     }
@@ -149,7 +130,6 @@ export class PresetZone extends BasicPresetZone
         this.modulatorZoneStartIndex = readLittleEndian(dataArray, 2);
         this.modulatorZoneSize = 0;
         this.generatorZoneSize = 0;
-        this.isGlobal = true;
     }
     
     setZoneSize(modulatorZoneSize, generatorZoneSize)
@@ -166,7 +146,12 @@ export class PresetZone extends BasicPresetZone
     {
         for (let i = this.generatorZoneStartIndex; i < this.generatorZoneStartIndex + this.generatorZoneSize; i++)
         {
-            this.generators.push(generators[i]);
+            const g = generators[i];
+            if (!g)
+            {
+                throw new Error("Missing generator in preset zone! The file may corrupted.");
+            }
+            this.addGenerators(g);
         }
     }
     
@@ -178,7 +163,12 @@ export class PresetZone extends BasicPresetZone
     {
         for (let i = this.modulatorZoneStartIndex; i < this.modulatorZoneStartIndex + this.modulatorZoneSize; i++)
         {
-            this.modulators.push(modulators[i]);
+            const m = modulators[i];
+            if (!m)
+            {
+                throw new Error("Missing modulator in preset zone! The file may corrupted.");
+            }
+            this.addModulators(m);
         }
     }
     
@@ -191,35 +181,7 @@ export class PresetZone extends BasicPresetZone
         let instrumentID = this.generators.find(g => g.generatorType === generatorTypes.instrument);
         if (instrumentID)
         {
-            this.instrument = instruments[instrumentID.generatorValue];
-            this.instrument.addUseCount();
-            this.isGlobal = false;
-        }
-    }
-    
-    /**
-     * Reads the keyRange of the zone
-     */
-    getKeyRange()
-    {
-        let range = this.generators.find(g => g.generatorType === generatorTypes.keyRange);
-        if (range)
-        {
-            this.keyRange.min = range.generatorValue & 0x7F;
-            this.keyRange.max = (range.generatorValue >> 8) & 0x7F;
-        }
-    }
-    
-    /**
-     * reads the velolicty range of the zone
-     */
-    getVelRange()
-    {
-        let range = this.generators.find(g => g.generatorType === generatorTypes.velRange);
-        if (range)
-        {
-            this.velRange.min = range.generatorValue & 0x7F;
-            this.velRange.max = (range.generatorValue >> 8) & 0x7F;
+            this.setInstrument(instruments[instrumentID.generatorValue]);
         }
     }
 }
@@ -249,8 +211,6 @@ export function readPresetZones(zonesChunk, presetGenerators, presetModulators, 
             zones[zones.length - 1].getGenerators(presetGenerators);
             zones[zones.length - 1].getModulators(presetModulators);
             zones[zones.length - 1].getInstrument(instruments);
-            zones[zones.length - 1].getKeyRange();
-            zones[zones.length - 1].getVelRange();
         }
         zones.push(zone);
     }

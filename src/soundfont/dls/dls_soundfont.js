@@ -1,4 +1,4 @@
-import { BasicSoundBank } from "../basic_soundfont/basic_soundfont.js";
+import { BasicSoundBank } from "../basic_soundfont/basic_soundbank.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin.js";
 import { consoleColors } from "../../utils/other.js";
@@ -114,8 +114,7 @@ class DLSSoundFont extends BasicSoundBank
         this.readDLSInstrumentList(instrumentListChunk);
         
         // sort presets
-        this.presets.sort((a, b) => (a.program - b.program) + (a.bank - b.bank));
-        this._parseInternal();
+        this.flush();
         SpessaSynthInfo(
             `%cParsing finished! %c"${this.soundFontInfo["INAM"] || "UNNAMED"}"%c has %c${this.presets.length} %cpresets,
         %c${this.instruments.length}%c instruments and %c${this.samples.length}%c samples.`,

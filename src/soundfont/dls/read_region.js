@@ -1,7 +1,8 @@
 import { readLittleEndian, signedInt16 } from "../../utils/byte_functions/little_endian.js";
 import { findRIFFListType, readRIFFChunk } from "../basic_soundfont/riff_chunk.js";
 import { DLSZone } from "./dls_zone.js";
-import { Generator, generatorTypes } from "../basic_soundfont/generator.js";
+import { Generator } from "../basic_soundfont/generator.js";
+import { generatorTypes } from "../basic_soundfont/generator_types.js";
 
 /**
  * @this {DLSSoundFont}
@@ -51,7 +52,7 @@ export function readRegion(chunk)
     const exclusive = readLittleEndian(regionHeader.chunkData, 2);
     if (exclusive !== 0)
     {
-        zone.generators.push(new Generator(generatorTypes.exclusiveClass, exclusive));
+        zone.addGenerators(new Generator(generatorTypes.exclusiveClass, exclusive));
     }
     
     // lart
@@ -60,7 +61,6 @@ export function readRegion(chunk)
     this.readLart(lart, lar2, zone);
     
     // wsmp: wave sample chunk
-    zone.isGlobal = false;
     const waveSampleChunk = regionChunks.find(c => c.header === "wsmp");
     // cbSize
     readLittleEndian(waveSampleChunk.chunkData, 4);
