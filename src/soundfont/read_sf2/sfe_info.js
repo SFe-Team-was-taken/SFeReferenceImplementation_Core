@@ -4,7 +4,7 @@ import { readRIFFChunk } from "../basic_soundfont/riff_chunk.js";
 import { consoleColors } from "../../utils/other.js";
 import { SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
-import { BasicSoundBank } from "../basic_soundfont/basic_soundfont.js";
+import { BasicSoundBank } from "../basic_soundfont/basic_soundbank.js";
 
 /**
  * sfe_info.js
