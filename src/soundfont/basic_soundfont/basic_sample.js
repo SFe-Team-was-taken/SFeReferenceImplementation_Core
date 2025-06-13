@@ -238,6 +238,7 @@ export class BasicSample
     
     /**
      * @returns {Float32Array}
+     * @virtual
      */
     getAudioData()
     {
@@ -251,6 +252,7 @@ export class BasicSample
     // noinspection JSUnusedGlobalSymbols
     /**
      * @param audioData {Float32Array}
+     * @virtual
      */
     setAudioData(audioData)
     {
