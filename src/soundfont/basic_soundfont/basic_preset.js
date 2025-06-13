@@ -34,11 +34,18 @@ export class BasicPreset
     program = 0;
     
     /**
-     * The preset's MIDI bank number
+     * The preset's MIDI bank MSB number
+     * Rename later 
      * @type {number}
      */
     bank = 0;
     
+    /**
+     * The preset's MIDI bank LSB number
+     * @type {number}
+     */
+    bankLSB = 0;
+
     /**
      * The preset's zones
      * @type {BasicPresetZone[]}

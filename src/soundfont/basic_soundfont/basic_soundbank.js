@@ -130,7 +130,7 @@ class BasicSoundBank
             newPresets.forEach(newPreset =>
             {
                 if (
-                    presets.find(existingPreset => existingPreset.bank === newPreset.bank && existingPreset.program === newPreset.program) === undefined
+                    presets.find(existingPreset => existingPreset.bank === newPreset.bank && existingPreset.bankLSB === newPreset.bankLSB && existingPreset.program === newPreset.program) === undefined
                 )
                 {
                     presets.push(newPreset);
@@ -229,9 +229,9 @@ class BasicSoundBank
     {
         this.presets.sort((a, b) =>
         {
-            if (a.bank !== b.bank)
+            if ((a.bank + 256 * a.bankLSB) !== (b.bank + 256 * b.bankLSB))
             {
-                return a.bank - b.bank;
+                return (a.bank + 256 * a.bankLSB) - (b.bank + 256 * b.bankLSB);
             }
             return a.program - b.program;
         });

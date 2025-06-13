@@ -33,13 +33,15 @@ export class Preset extends BasicPreset
             .replace(/\d{3}:\d{3}/, ""); // remove those pesky "000:001"
         
         this.program = readLittleEndian(presetChunk.chunkData, 2);
-        this.bank = readLittleEndian(presetChunk.chunkData, 2);
+        this.bank = readLittleEndian(presetChunk.chunkData, 1); // Bank MSB is only first byte
+        this.bankLSB = readLittleEndian(presetChunk.chunkData, 1); // Bank LSB is second byte
         this.zoneStartIndex = readLittleEndian(presetChunk.chunkData, 2);
         
         // read the dword
         this.library = readLittleEndian(presetChunk.chunkData, 4);
         this.genre = readLittleEndian(presetChunk.chunkData, 4);
         this.morphology = readLittleEndian(presetChunk.chunkData, 4);
+        console.log(`${this.bankRaw}:${this.program} at ${this.zoneStartIndex}: ${this.presetName}`);
     }
     
     /**

@@ -22,14 +22,8 @@ export class DLSPreset extends BasicPreset
         const bankMSB = (ulBank >> 8) & 127;
         const bankLSB = ulBank & 127;
         // switch accordingly
-        if (bankMSB > 0)
-        {
             this.bank = bankMSB;
-        }
-        else
-        {
-            this.bank = bankLSB;
-        }
+            this.bankLSB = bankLSB;
         const isDrums = ulBank >> 31;
         if (isDrums)
         {
