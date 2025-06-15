@@ -156,7 +156,6 @@ class BasicSoundBank
             20,
             0,
             0,
-            0,
             127
         );
         sample.sampleData = new Float32Array(128);
@@ -466,15 +465,24 @@ class BasicSoundBank
     
     removeUnusedElements()
     {
-        this.instruments.forEach(i =>
+        this.instruments = this.instruments.filter(i =>
         {
-            if (i.useCount < 1)
+            const deletable = i.useCount < 1;
+            if (deletable)
             {
-                i.deleteAllZones();
+                i.deleteInstrument();
             }
+            return deletable;
         });
-        this.instruments = this.instruments.filter(i => i.useCount > 0);
-        this.samples = this.samples.filter(s => s.useCount > 0);
+        this.samples = this.samples.filter(s =>
+        {
+            const deletable = s.useCount < 1;
+            if (deletable)
+            {
+                s.deleteSample();
+            }
+            return deletable;
+        });
     }
     
     /**
@@ -482,12 +490,8 @@ class BasicSoundBank
      */
     deleteInstrument(instrument)
     {
-        if (instrument.useCount > 0)
-        {
-            throw new Error(`Cannot delete an instrument that has ${instrument.useCount} usages.`);
-        }
+        instrument.deleteInstrument();
         this.instruments.splice(this.instruments.indexOf(instrument), 1);
-        instrument.deleteAllZones();
     }
     
     /**
@@ -504,10 +508,7 @@ class BasicSoundBank
      */
     deleteSample(sample)
     {
-        if (sample.useCount > 0)
-        {
-            throw new Error(`Cannot delete sample that has ${sample.useCount} usages.`);
-        }
+        sample.deleteSample();
         this.samples.splice(this.samples.indexOf(sample), 1);
     }
     
@@ -639,6 +640,7 @@ class BasicSoundBank
         delete this.presets;
         delete this.instruments;
         delete this.samples;
+        delete this.soundFontInfo;
     }
 }
 

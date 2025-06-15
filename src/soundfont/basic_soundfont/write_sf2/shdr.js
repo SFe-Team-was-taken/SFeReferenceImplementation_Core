@@ -2,6 +2,7 @@ import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
 import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
+import { SF3_BIT_FLIT } from "../../read_sf2/samples.js";
 
 /**
  * @this {BasicSoundBank}
@@ -40,9 +41,15 @@ export function getSHDR(smplStartOffsets, smplEndOffsets)
         shdrData[shdrData.currentIndex++] = sample.samplePitch;
         shdrData[shdrData.currentIndex++] = sample.samplePitchCorrection;
         // sample link
-        writeWord(shdrData, sample.sampleLink);
-        // sample type: write raw because we simply copy compressed samples
-        writeWord(shdrData, sample.sampleType);
+        const sampleLinkIndex = this.samples.indexOf(sample.linkedSample);
+        writeWord(shdrData, Math.max(0, sampleLinkIndex));
+        // sample type: add byte if compressed
+        let type = sample.sampleType;
+        if (sample.isCompressed)
+        {
+            type |= SF3_BIT_FLIT;
+        }
+        writeWord(shdrData, type);
     });
     
     // write EOS and zero everything else

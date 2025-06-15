@@ -6,8 +6,16 @@ import { SpessaSynthWarn } from "../../utils/loggin.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { BasicSample } from "../basic_soundfont/basic_sample.js";
 
+export const SF3_BIT_FLIT = 0x10;
+
 export class SoundFontSample extends BasicSample
 {
+    /**
+     * Linked sample index for retrieving linked samples in sf2
+     * @type {number}
+     */
+    linkedSampleIndex;
+    
     /**
      * Creates a sample
      * @param sampleName {string}
@@ -18,7 +26,7 @@ export class SoundFontSample extends BasicSample
      * @param sampleRate {number}
      * @param samplePitch {number}
      * @param samplePitchCorrection {number}
-     * @param sampleLink {number}
+     * @param linkedSampleIndex {number}
      * @param sampleType {number}
      * @param smplArr {IndexedByteArray|Float32Array}
      * @param sampleIndex {number} initial sample index when loading the sfont
@@ -34,23 +42,28 @@ export class SoundFontSample extends BasicSample
         sampleRate,
         samplePitch,
         samplePitchCorrection,
-        sampleLink,
+        linkedSampleIndex,
         sampleType,
         smplArr,
         sampleIndex,
         isDataRaw
     )
     {
+        // read sf3
+        // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
+        const compressed = (sampleType & SF3_BIT_FLIT) > 0;
+        // remove the compression flag
+        sampleType &= ~SF3_BIT_FLIT;
         super(
             sampleName,
             sampleRate,
             samplePitch,
             samplePitchCorrection,
-            sampleLink,
             sampleType,
             sampleLoopStartIndex - (sampleStartIndex / 2),
             sampleLoopEndIndex - (sampleStartIndex / 2)
         );
+        this.isCompressed = compressed;
         this.sampleName = sampleName;
         // in bytes
         this.sampleStartIndex = sampleStartIndex;
@@ -69,6 +82,19 @@ export class SoundFontSample extends BasicSample
             this.sampleLength = 99999999; // set to 999,999 before we decode it
         }
         this.isDataRaw = isDataRaw;
+        this.linkedSampleIndex = linkedSampleIndex;
+    }
+    
+    /**
+     * @param samplesArray {BasicSample[]}
+     */
+    getLinkedSample(samplesArray)
+    {
+        if (this.linkedSample || !this.isLinked)
+        {
+            return;
+        }
+        this.setLinkedSample(samplesArray[this.linkedSampleIndex], this.sampleType);
     }
     
     /**
@@ -278,6 +304,10 @@ export function readSamples(sampleHeadersChunk, smplChunkData, isSmplDataRaw = t
     }
     // remove EOS
     samples.pop();
+    
+    // link samples
+    samples.forEach(s => s.getLinkedSample(samples));
+    
     return samples;
 }
 
