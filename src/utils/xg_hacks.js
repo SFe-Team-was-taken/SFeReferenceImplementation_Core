@@ -16,12 +16,12 @@ export function getDefaultBank(sys)
 }
 
 /**
- * @param bankNr {number}
+ * @param bankMSB {number}
  * @returns {boolean}
  */
-export function isXGDrums(bankNr)
+export function isXGDrums(bankMSB)
 {
-    return bankNr === 120 || bankNr === 126 || bankNr === 127;
+    return bankMSB === 120 || bankMSB === 126 || bankMSB === 127;
 }
 
 /**

@@ -41,7 +41,7 @@ export class Preset extends BasicPreset
         this.library = readLittleEndian(presetChunk.chunkData, 4);
         this.genre = readLittleEndian(presetChunk.chunkData, 4);
         this.morphology = readLittleEndian(presetChunk.chunkData, 4);
-        console.log(`${this.bankRaw}:${this.program} at ${this.zoneStartIndex}: ${this.presetName}`);
+        console.log(`${this.bank}:${this.bankLSB}:${this.program} at ${this.zoneStartIndex}: ${this.presetName}`);
     }
     
     /**

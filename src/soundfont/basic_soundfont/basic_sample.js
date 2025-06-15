@@ -88,16 +88,7 @@ export class BasicSample
      * @type {boolean}
      */
     isContainerised;
-    
-    /**
-     * Type of compression used
-     * 0 = WAV, 1 = Vorbis, 2 = Opus, 3 = FLAC
-     * Invalid/uninitialised value is represented by -1
-     * Only 1 is currently implemented
-     * @type {number}
-     */
-    compressionType;
-
+ 
     /**
      * The sample data if it was compressed/containerised by spessasynth
      * @type {Uint8Array}
@@ -204,7 +195,7 @@ export class BasicSample
     compressSample(quality, encodeVorbis)
     {
         // no need to compress
-        if (this.isContainerised && this.compressionType != 0)
+        if (this.isContainerised)
         {
             return;
         }
@@ -346,7 +337,7 @@ export class BasicSample
      */
     setAudioData(audioData)
     {
-        this.isCompressed = false;
+        this.isContainerised = false;
         delete this.compressedData;
         this.sampleData = audioData;
     }
