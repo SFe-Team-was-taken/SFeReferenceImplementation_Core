@@ -514,23 +514,24 @@ class BasicSoundBank
     
     /**
      * Get the appropriate preset, undefined if not found
-     * @param bankNr {number}
+     * @param bankMSB {number}
+     * @param bankLSB {number}
      * @param programNr {number}
      * @param allowXGDrums {boolean} if true, allows XG drum banks (120, 126 and 127) as drum preset
      * @return {BasicPreset}
      */
-    getPresetNoFallback(bankNr, programNr, allowXGDrums = false)
+    getPresetNoFallback(bankMSB, bankLSB, programNr, allowXGDrums = false)
     {
-        const isDrum = bankNr === 128 || (allowXGDrums && isXGDrums(bankNr));
+        const isDrum = bankMSB === 128 || (allowXGDrums && isXGDrums(bankMSB));
         // check for exact match
         let p;
         if (isDrum)
         {
-            p = this.presets.find(p => p.bank === bankNr && p.isDrumPreset(allowXGDrums) && p.program === programNr);
+            p = this.presets.find(p => p.bank === bankMSB && p.bankLSB === bankLSB && p.isDrumPreset(allowXGDrums) && p.program === programNr);
         }
         else
         {
-            p = this.presets.find(p => p.bank === bankNr && p.program === programNr);
+            p = this.presets.find(p => p.bank === bankMSB && p.bankLSB === bankLSB && p.program === programNr);
         }
         if (p)
         {
@@ -554,24 +555,25 @@ class BasicSoundBank
     
     /**
      * Get the appropriate preset
-     * @param bankNr {number}
+     * @param bankMSB {number}
+     * @param bankLSB {number}
      * @param programNr {number}
      * @param allowXGDrums {boolean} if true, allows XG drum banks (120, 126 and 127) as drum preset
      * @returns {BasicPreset}
      */
-    getPreset(bankNr, programNr, allowXGDrums = false)
+    getPreset(bankMSB, bankLSB, programNr, allowXGDrums = false)
     {
-        const isDrums = bankNr === 128 || (allowXGDrums && isXGDrums(bankNr));
+        const isDrums = bankMSB === 128 || (allowXGDrums && isXGDrums(bankMSB));
         // check for exact match
         let preset;
         // only allow drums if the preset is considered to be a drum preset
         if (isDrums)
         {
-            preset = this.presets.find(p => p.bank === bankNr && p.isDrumPreset(allowXGDrums) && p.program === programNr);
+            preset = this.presets.find(p => p.bank === bankMSB && p.bankLSB === bankLSB && p.isDrumPreset(allowXGDrums) && p.program === programNr);
         }
         else
         {
-            preset = this.presets.find(p => p.bank === bankNr && p.program === programNr);
+            preset = this.presets.find(p => p.bank === bankMSB && p.bankLSB === bankLSB && p.program === programNr);
         }
         if (preset)
         {
@@ -596,7 +598,7 @@ class BasicSoundBank
         if (preset)
         {
             SpessaSynthWarn(
-                `%cPreset ${bankNr}.${programNr} not found. Replaced with %c${preset.presetName} (${preset.bank}.${preset.program})`,
+                `%cPreset ${bankMSB}.${bankLSB}.${programNr} not found. Replaced with %c${preset.presetName} (${preset.bank}.${preset.program})`,
                 consoleColors.warn,
                 consoleColors.recognized
             );

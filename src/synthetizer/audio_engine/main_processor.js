@@ -175,8 +175,8 @@ class SpessaSynthProcessor
     /**
      * Cached voices for all presets for this synthesizer.
      * Nesting goes like this:
-     * this.cachedVoices[bankNumber][programNumber][midiNote][velocity] = a list of voices for that.
-     * @type {Voice[][][][][]}
+     * this.cachedVoices[bankNumberMSB][bankNumberLSB][programNumber][midiNote][velocity] = a list of voices for that.
+     * @type {Voice[][][][][][]}
      */
     cachedVoices = [];
     
@@ -436,9 +436,9 @@ class SpessaSynthProcessor
         // override this to XG, to set the default preset to NOT be XG drums!
         const sys = this.system;
         this.system = "xg";
-        this.defaultPreset = this.getPreset(0, 0);
+        this.defaultPreset = this.getPreset(0, 0, 0);
         this.system = sys;
-        this.drumPreset = this.getPreset(128, 0);
+        this.drumPreset = this.getPreset(128, 0, 0);
     }
     
     /**
@@ -457,36 +457,41 @@ class SpessaSynthProcessor
      * @param velocity {number}
      * @returns {Voice[]|undefined}
      */
-    getCachedVoice(bank, program, midiNote, velocity)
+    getCachedVoice(bank, bankLSB, program, midiNote, velocity)
     {
-        return this.cachedVoices?.[bank]?.[program]?.[midiNote]?.[velocity];
+        return this.cachedVoices?.[bank]?.[bankLSB]?.[program]?.[midiNote]?.[velocity];
     }
     
     /**
      * @param bank {number}
+     * @param bankLSB {number}
      * @param program {number}
      * @param midiNote {number}
      * @param velocity {number}
      * @param voices {Voice[]}
      */
-    setCachedVoice(bank, program, midiNote, velocity, voices)
+    setCachedVoice(bank, bankLSB, program, midiNote, velocity, voices)
     {
         // make sure that it exists
         if (!this.cachedVoices[bank])
         {
             this.cachedVoices[bank] = [];
         }
-        if (!this.cachedVoices[bank][program])
+        if (!this.cachedVoices[bank][bankLSB])
         {
-            this.cachedVoices[bank][program] = [];
+            this.cachedVoices[bank][bankLSB] = [];
         }
-        if (!this.cachedVoices[bank][program][midiNote])
+        if (!this.cachedVoices[bank][bankLSB][program])
         {
-            this.cachedVoices[bank][program][midiNote] = [];
+            this.cachedVoices[bank][bankLSB][program] = [];
+        }
+        if (!this.cachedVoices[bank][bankLSB][program][midiNote])
+        {
+            this.cachedVoices[bank][bankLSB][program][midiNote] = [];
         }
         
         // cache
-        this.cachedVoices[bank][program][midiNote][velocity] = voices;
+        this.cachedVoices[bank][bankLSB][program][midiNote][velocity] = voices;
     }
     
     // noinspection JSUnusedGlobalSymbols
@@ -758,12 +763,13 @@ class SpessaSynthProcessor
     
     /**
      * @param program {number}
-     * @param bank {number}
+     * @param bankMSB {number}
+     * @param bankLSB {number}
      * @returns {BasicPreset}
      */
-    getPreset(bank, program)
+    getPreset(bankMSB, bankLSB, program)
     {
-        return this.soundfontManager.getPreset(bank, program, isSystemXG(this.system)).preset;
+        return this.soundfontManager.getPreset(bankMSB, bankLSB, program, isSystemXG(this.system)).preset;
     }
 }
 

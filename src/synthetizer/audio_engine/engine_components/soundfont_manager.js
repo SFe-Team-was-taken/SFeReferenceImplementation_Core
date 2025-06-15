@@ -17,7 +17,7 @@ export class SoundFontManager
      */
     soundfontList = [];
     /**
-     * @type {{bank: number, presetName: string, program: number}[]}
+     * @type {{bank: number, bankLSB: number, presetName: string, program: number}[]}
      */
     presetList = [];
     
@@ -41,15 +41,21 @@ export class SoundFontManager
         {
             const font = this.soundfontList[i];
             /**
-             * prevent preset names from the same soudfont from being overriden
+             * prevent preset names from the same soundfont from being overriden
              * if the soundfont has two presets with matching bank and program
              * @type {Set<string>}
              */
             const presets = new Set();
             for (const p of font.soundfont.presets)
             {
-                const bank = Math.min(128, p.bank + font.bankOffset);
-                const presetString = `${bank}-${p.program}`;
+                const bank = Math.min(256, p.bank + font.bankOffset);
+                const bankLSB = Math.min(128, p.bankLSB);
+                let presetString;
+                if (bank > 127) {
+                    presetString = `${bank - 128}-${bankLSB}-${p.program}-perc`;
+                } else {
+                    presetString = `${bank}-${bankLSB}-${p.program}`;
+                }
                 if (presets.has(presetString))
                 {
                     continue;
@@ -65,8 +71,9 @@ export class SoundFontManager
             const pb = string.split("-");
             this.presetList.push({
                 presetName: name,
-                program: parseInt(pb[1]),
-                bank: parseInt(pb[0])
+                program: parseInt(pb[2]),
+                bank: parseInt(pb[0]),
+                bankLSB: parseInt(pb[1])
             });
         }
         this.presetListChangeCallback();
@@ -175,22 +182,24 @@ export class SoundFontManager
     /**
      * Gets a given preset from the soundfont stack
      * @param bankNumber {number}
+     * @param bankNumberLSB {number}
      * @param programNumber {number}
      * @param allowXGDrums {boolean} if true, allows XG drum banks (120, 126 and 127) as drum preset
      * @returns {{preset: BasicPreset, bankOffset: number}} the preset and its bank offset
      */
-    getPreset(bankNumber, programNumber, allowXGDrums = false)
+    getPreset(bankNumber, bankNumberLSB, programNumber, allowXGDrums = false)
     {
         if (this.soundfontList.length < 1)
         {
             throw new Error("No soundfonts! Did you forget to add one?");
         }
-        const isDrum = bankNumber === 128 || (allowXGDrums && isXGDrums(bankNumber));
+        const isDrum = bankNumber >= 128 || (allowXGDrums && isXGDrums(bankNumber));
         for (const sf of this.soundfontList)
         {
             // check for the preset (with given offset)
             const preset = sf.soundfont.getPresetNoFallback(
-                bankNumber === 128 ? 128 : bankNumber - sf.bankOffset,
+                bankNumber >= 128 ? bankNumber : bankNumber - sf.bankOffset, // Offset currently unsupported with percussion
+                bankNumberLSB,
                 programNumber,
                 allowXGDrums
             );

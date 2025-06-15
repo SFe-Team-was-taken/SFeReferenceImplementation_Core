@@ -72,8 +72,8 @@ export function loadNewSequence(parsedMidi, autoPlay = true)
     const used = this.midiData.getUsedProgramsAndKeys(this.synth.soundfontManager);
     for (const [programBank, combos] of Object.entries(used))
     {
-        const [bank, program] = programBank.split(":").map(Number);
-        const preset = this.synth.getPreset(bank, program);
+        const [bank, bankLSB, program] = programBank.split(":").map(Number);
+        const preset = this.synth.getPreset(bank, bankLSB, program);
         SpessaSynthInfo(
             `%cPreloading used samples on %c${preset.presetName}%c...`,
             consoleColors.info,
@@ -83,7 +83,7 @@ export function loadNewSequence(parsedMidi, autoPlay = true)
         for (const combo of combos)
         {
             const [midiNote, velocity] = combo.split("-").map(Number);
-            this.synth.getVoicesForPreset(preset, bank, program, midiNote, velocity, midiNote);
+            this.synth.getVoicesForPreset(preset, bank, bankLSB, program, midiNote, velocity, midiNote);
         }
     }
     SpessaSynthGroupEnd();

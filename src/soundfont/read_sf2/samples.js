@@ -106,9 +106,9 @@ export class SoundFontSample extends BasicSample
         const smplArr = this.sampleDataArray;
         if (this.isContainerised)
         {
-            if (this.compressedData)
+            if (this.containerisedData)
             {
-                return this.compressedData;
+                return this.containerisedData;
             }
             const smplStart = smplArr.currentIndex;
             return smplArr.slice(this.sampleStartIndex / 2 + smplStart, this.sampleEndIndex / 2 + smplStart);

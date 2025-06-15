@@ -363,7 +363,8 @@ class Voice
 
 /**
  * @param preset {BasicPreset} the preset to get voices for
- * @param bank {number} the bank to cache the voices in
+ * @param bank {number} the MSB bank to cache the voices in
+ * @param bankLSB {number} the LSB bank to cache the voices in
  * @param program {number} program to cache the voices in
  * @param midiNote {number} the MIDI note to use
  * @param velocity {number} the velocity to use
@@ -371,7 +372,7 @@ class Voice
  * @this {SpessaSynthProcessor}
  * @returns {Voice[]} output is an array of Voices
  */
-export function getVoicesForPreset(preset, bank, program, midiNote, velocity, realKey)
+export function getVoicesForPreset(preset, bank, bankLSB, program, midiNote, velocity, realKey)
 {
     /**
      * @type {Voice[]}
@@ -470,7 +471,7 @@ export function getVoicesForPreset(preset, bank, program, midiNote, velocity, re
             return voices;
         }, []);
     // cache the voice
-    this.setCachedVoice(bank, program, midiNote, velocity, voices);
+    this.setCachedVoice(bank, bankLSB, program, midiNote, velocity, voices);
     return voices.map(v =>
         Voice.copy(v, this.currentSynthTime, realKey));
 }
@@ -499,7 +500,7 @@ export function getVoices(channel, midiNote, velocity, realKey)
         program = override.program;
     }
     
-    const cached = this.getCachedVoice(bank, program, midiNote, velocity);
+    const cached = this.getCachedVoice(bank, 0, program, midiNote, velocity); // LSB zero until XG hacks rewrite
     // if cached, return it!
     if (cached !== undefined)
     {
@@ -512,5 +513,5 @@ export function getVoices(channel, midiNote, velocity, realKey)
     {
         preset = this.getPreset(bank, program);
     }
-    return this.getVoicesForPreset(preset, bank, program, midiNote, velocity, realKey);
+    return this.getVoicesForPreset(preset, bank, 0, program, midiNote, velocity, realKey); // LSB zero until XG hacks rewrite
 }

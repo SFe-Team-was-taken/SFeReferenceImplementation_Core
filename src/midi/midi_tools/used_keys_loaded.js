@@ -33,6 +33,7 @@ export function getUsedProgramsAndKeys(soundfont)
             bank: bank,
             bankLSB: 0,
             actualBank: bank,
+            actualLSB: 0,
             drums: i % 16 === DEFAULT_PERCUSSION, // drums appear on 9 every 16 channels,
             string: `${bank}:0`
         });
@@ -45,28 +46,33 @@ export function getUsedProgramsAndKeys(soundfont)
     {
         const bank = chooseBank(ch.bank, ch.bankLSB, ch.drums, isSystemXG(system));
         // check if this exists in the soundfont
-        let existsBank, existsProgram;
+        let existsBank, existsLSB, existsProgram;
         if (soundfont instanceof SoundFontManager)
         {
             /**
              * @type {{preset: BasicPreset, bankOffset: number}}
+             * LSB forced to zero until XG hacks are rewritten
              */
-            let exists = soundfont.getPreset(bank, ch.program, isSystemXG(system));
+            let exists = soundfont.getPreset(bank, 0, ch.program, isSystemXG(system));
             existsBank = exists.preset.bank + exists.bankOffset;
+            existsLSB = exists.preset.bankLSB;
             existsProgram = exists.preset.program;
         }
         else
         {
             /**
              * @type {BasicPreset}
+             * LSB forced to zero until XG hacks are rewritten
              */
-            let exists = soundfont.getPreset(bank, ch.program, isSystemXG(system));
+            let exists = soundfont.getPreset(bank, 0, ch.program, isSystemXG(system));
             existsBank = exists.bank;
+            existsLSB = exists.bankLSB;
             existsProgram = exists.program;
         }
         ch.actualBank = existsBank;
+        ch.actualLSB = existsLSB;
         ch.program = existsProgram;
-        ch.string = ch.actualBank + ":" + ch.program;
+        ch.string = ch.actualBank + ":" + ch.actualLSB + ":" + ch.program;
         if (!usedProgramsAndKeys[ch.string])
         {
             SpessaSynthInfo(
