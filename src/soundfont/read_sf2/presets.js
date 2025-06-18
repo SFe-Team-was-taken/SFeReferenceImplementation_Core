@@ -3,6 +3,8 @@ import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { BasicPreset } from "../basic_soundfont/basic_preset.js";
 import { PresetZone } from "./preset_zones.js";
+import { consoleColors } from "../../utils/other.js";
+import { SpessaSynthInfo } from "../../utils/loggin.js";
 
 /**
  * parses soundfont presets, also includes function for getting the generators and samples from midi note and velocity
@@ -66,6 +68,16 @@ export function readPresets(presetChunk, parent)
      * @type {Preset[]}
      */
     let presets = [];
+    SpessaSynthInfo(`%cThe preset reader detects ifil version: %c${parent.soundFontInfo["ifil.wMajor"]}.${parent.soundFontInfo["ifil.wMinor"]}`,
+                                consoleColors.info,
+                                consoleColors.recognized);
+    if (parent.soundFontInfo["ifil.wMajor"] == 2 && parent.soundFontInfo["ifil.wMinor"] >= 1024) // SFe detected, for some reason strict equals doesn't work
+    {
+        SpessaSynthInfo(`%cThe preset reader detects SFe extended version: %c${parent.sfeInfo["SFvx.wSFeSpecMajorVersion"]}.${parent.sfeInfo["SFvx.wSFeSpecMinorVersion"]}`,
+                                consoleColors.info,
+                                consoleColors.recognized);
+    }
+
     while (presetChunk.chunkData.length > presetChunk.chunkData.currentIndex)
     {
         let preset = new Preset(presetChunk, parent);
