@@ -63,8 +63,7 @@ export class SoundFont2 extends BasicSoundBank
             SpessaSynthGroupEnd();
             this.parsingError(`Invalid chunk header! Expected "riff" or "rf64" got "${firstHeader}"`);
         }
-
-        const type = readBytesAsString(this.dataArray, 4).toLowerCase();
+        const type = readBytesAsString(mainFileArray, 4).toLowerCase();
         if (type !== "sfbk" && type !== "sfpk" && type !== "sfen")
         {
             SpessaSynthGroupEnd();
@@ -363,7 +362,7 @@ export class SoundFont2 extends BasicSoundBank
                         SpessaSynthInfo("%cExtended SF2 found!", consoleColors.recognized);
                         xdtaChunk = chunk;
                     } else {
-                        SpessaSynthWarn(`Unrecognised nested list chunk found: ${listHeader}`);
+                        SpessaSynthWarn(`Unrecognised nested list chunk found: ${listType}`);
                     }
                     break;
                 
