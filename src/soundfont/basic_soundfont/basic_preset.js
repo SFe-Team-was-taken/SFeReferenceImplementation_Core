@@ -135,10 +135,7 @@ export class BasicPreset
             {
                 this.getSamplesAndGenerators(key, velocity).forEach(samandgen =>
                 {
-                    if (!samandgen.sample.isSampleLoaded)
-                    {
-                        samandgen.sample.getAudioData();
-                    }
+                    samandgen.sample.getAudioData();
                 });
             }
         }

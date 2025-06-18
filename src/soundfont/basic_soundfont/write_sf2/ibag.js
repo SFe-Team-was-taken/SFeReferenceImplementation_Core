@@ -1,23 +1,25 @@
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeWord } from "../../../utils/byte_functions/little_endian.js";
-import { RiffChunk, writeRIFFChunk } from "../riff_chunk.js";
+import { writeRIFFChunkRaw } from "../riff_chunk.js";
 
 const BAG_SIZE = 4;
 
 /**
  * @this {BasicSoundBank}
- * @returns {IndexedByteArray}
+ * @returns {ReturnedExtendedSf2Chunks}
  */
 export function getIBAG()
 {
     // write all ibag with their start indexes as they were changed in getIGEN() and getIMOD()
-    const ibagsize = this.instruments.reduce(
+    const ibagSize = this.instruments.reduce(
         (sum, i) =>
             // +1 because global zone
             (i.instrumentZones.length + 1) * BAG_SIZE + sum,
         BAG_SIZE
     );
-    const ibagdata = new IndexedByteArray(ibagsize);
+    const ibagData = new IndexedByteArray(ibagSize);
+    // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
+    const xibagData = new IndexedByteArray(ibagSize);
     let generatorIndex = 0;
     let modulatorIndex = 0;
     /**
@@ -25,8 +27,12 @@ export function getIBAG()
      */
     const writeZone = z =>
     {
-        writeWord(ibagdata, generatorIndex);
-        writeWord(ibagdata, modulatorIndex);
+        // bottom WORD: regular ibag
+        writeWord(ibagData, generatorIndex & 0xFFFF);
+        writeWord(ibagData, modulatorIndex & 0xFFFF);
+        // top WORD: extended ibag
+        writeWord(xibagData, generatorIndex >> 16);
+        writeWord(xibagData, modulatorIndex >> 16);
         generatorIndex += z.generators.length;
         modulatorIndex += z.modulators.length;
     };
@@ -40,11 +46,15 @@ export function getIBAG()
         }
     }
     // write the terminal IBAG
-    writeWord(ibagdata, generatorIndex);
-    writeWord(ibagdata, modulatorIndex);
-    return writeRIFFChunk(new RiffChunk(
-        "ibag",
-        ibagdata.length,
-        ibagdata
-    ));
+    writeWord(ibagData, generatorIndex & 0xFFFF);
+    writeWord(ibagData, modulatorIndex & 0xFFFF);
+    writeWord(xibagData, generatorIndex >> 16);
+    writeWord(xibagData, modulatorIndex >> 16);
+    const ibag = writeRIFFChunkRaw("ibag", ibagData);
+    const xibag = writeRIFFChunkRaw("ibag", xibagData);
+    return {
+        pdta: ibag,
+        xdta: xibag,
+        highestIndex: Math.max(generatorIndex, modulatorIndex)
+    };
 }
