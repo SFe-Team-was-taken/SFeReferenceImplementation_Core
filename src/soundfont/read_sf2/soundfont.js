@@ -336,24 +336,17 @@ export class SoundFont2 extends BasicSoundBank
                 // dmod: default modulators
                 case "dmod":
                     const newModulators = readModulators(chunk);
-                    if (this.soundFontInfo[ifil.wMajor] < 2 || this.soundFontInfo[ifil.wMinor] < 1024) 
-                    {
-                        // Temporary for reference implementation!
-                        // When SFe 4.1 support is added, DMOD will be enabled for 4.0. 
-                        SpessaSynthWarn("DMOD sub-chunk ignored: unsupported SF version.")
-                    } else {
-                        text = `Modulators: ${newModulators.length}`;
+                    text = `Modulators: ${newModulators.length}`;
                         
-                        // override default modulators
-                        this.defaultModulators = newModulators;
-                        this.customDefaultModulators = true;
-                        this.soundFontInfo[chunk.header] = text;
-                        SpessaSynthInfo(
-                            `%c"${chunk.header}": %c"${text}"`,
-                            consoleColors.info,
-                            consoleColors.recognized
-                        );
-                    }
+                    // override default modulators
+                    this.defaultModulators = newModulators;
+                    this.customDefaultModulators = true;
+                    this.soundFontInfo[chunk.header] = text;
+                    SpessaSynthInfo(
+                        `%c"${chunk.header}": %c"${text}"`,
+                        consoleColors.info,
+                        consoleColors.recognized
+                    );
                     break;
                 // nested lists: isfe is nested inside info.
                 // the code is in sfe_info.js.         
