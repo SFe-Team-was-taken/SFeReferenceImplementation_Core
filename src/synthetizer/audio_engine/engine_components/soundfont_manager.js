@@ -81,7 +81,7 @@ export class SoundFontManager
     
     /**
      * Get the final preset list
-     * @returns {{bank: number, presetName: string, program: number}[]}
+     * @returns {{bank: number, bankLSB: number, presetName: string, program: number}[]}
      */
     getPresetList()
     {
