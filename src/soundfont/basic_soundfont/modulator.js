@@ -462,6 +462,17 @@ const soundFontModulators = [
     new DecodedModulator(0x00DD, 0x0, generatorTypes.chorusEffectsSend, 200, 0)
 ];
 
+const sf24VelFcModulator = [
+    // SF2.04 velocity to filter cutoff
+    new DecodedModulator(0x0102, 0x0, generatorTypes.initialFilterFc, -2400, 0)
+];
+
+const sf21VelFcModulator = [
+    // SF2.01 velocity to filter cutoff
+    // Not in use currently
+    new DecodedModulator(0x0502, 0x0, generatorTypes.initialFilterFc, -2400, 0)
+];
+
 const customModulators = [
     // custom modulators heck yeah
     // poly pressure to vibrato
@@ -550,6 +561,20 @@ const customModulators = [
 ];
 
 /**
+ * SFe 4 and later default modulators
  * @type {Modulator[]}
  */
-export const defaultModulators = soundFontModulators.concat(customModulators);
+export const sfeDefaultModulators = soundFontModulators.concat(customModulators);
+
+/**
+ * SF2.04 default modulators
+ * @type {Modulator[]}
+ */
+export const sf24DefaultModulators = soundFontModulators.concat(sf24VelFcModulator);
+
+/**
+ * SF2.01 default modulators
+ * Not in use currently
+ * @type {Modulator[]}
+ */
+export const sf21DefaultModulators = soundFontModulators.concat(sf21VelFcModulator);

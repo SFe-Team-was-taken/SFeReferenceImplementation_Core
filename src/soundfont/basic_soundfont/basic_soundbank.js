@@ -7,7 +7,7 @@ import {
 } from "../../utils/loggin.js";
 import { consoleColors } from "../../utils/other.js";
 import { write } from "./write_sf2/write.js";
-import { defaultModulators, Modulator } from "./modulator.js";
+import { sfeDefaultModulators, Modulator } from "./modulator.js";
 import { writeDLS } from "./write_dls/write_dls.js";
 import { BasicSample } from "./basic_sample.js";
 import { Generator } from "./generator.js";
@@ -56,7 +56,7 @@ class BasicSoundBank
      * Soundfont's default modulatorss
      * @type {Modulator[]}
      */
-    defaultModulators = defaultModulators.map(m => Modulator.copy(m));
+    defaultModulators = sfeDefaultModulators.map(m => Modulator.copy(m));
     
     /**
      * If the bank has custom default modulators (DMOD).

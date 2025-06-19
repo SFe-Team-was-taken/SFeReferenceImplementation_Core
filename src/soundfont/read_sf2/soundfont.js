@@ -13,7 +13,7 @@ import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_sync.min.js";
 import { BasicSoundBank } from "../basic_soundfont/basic_soundbank.js";
 import { Generator } from "../basic_soundfont/generator.js";
-import { Modulator } from "../basic_soundfont/modulator.js";
+import { sf24DefaultModulators, sf21DefaultModulators, sfeDefaultModulators, Modulator } from "../basic_soundfont/modulator.js";
 import { loadSFeInfo } from "./sfe_info.js";
 import { applyInstrumentZones, InstrumentZone } from "./instrument_zones.js";
 import { readZoneIndexes } from "./zones.js";
@@ -168,6 +168,13 @@ export class SoundFont2 extends BasicSoundBank
                                     sfeVersion = `4.0`; // Highest SFe version with ifil.wMinor=1024 is 4.0 (for now).
                                 } else {
                                     sfeVersion = text;
+                                    if (sfeVersion = `2.04`)
+                                    {
+                                        this.defaultModulators = sf24DefaultModulators.map(m => Modulator.copy(m));
+                                    } else if (sfeVersion = `2.01`)
+                                    {
+                                        this.defaultModulators = sf24DefaultModulators.map(m => Modulator.copy(m));
+                                    }
                                 }
                                 switch (bankType)
                                 {
