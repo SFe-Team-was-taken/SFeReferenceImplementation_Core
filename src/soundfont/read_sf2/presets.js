@@ -68,12 +68,15 @@ export function readPresets(presetChunk, parent)
      * @type {Preset[]}
      */
     let presets = [];
-    SpessaSynthInfo(`%cThe preset reader detects ifil version: %c${parent.soundFontInfo["ifil.wMajor"]}.${parent.soundFontInfo["ifil.wMinor"]}`,
+    let ifilVersionText = parent.soundFontInfo["ifil.wMajor"] + '.' + parent.soundFontInfo["ifil.wMinor"];
+    let sfeVersionText;
+    SpessaSynthInfo(`%cThe preset reader detects ifil version: %c${ifilVersionText}`,
                                 consoleColors.info,
                                 consoleColors.recognized);
     if (parent.soundFontInfo["ifil.wMajor"] == 2 && parent.soundFontInfo["ifil.wMinor"] >= 1024) // SFe detected, for some reason strict equals doesn't work
     {
-        SpessaSynthInfo(`%cThe preset reader detects SFe extended version: %c${parent.sfeInfo["SFvx.wSFeSpecMajorVersion"]}.${parent.sfeInfo["SFvx.wSFeSpecMinorVersion"]}`,
+        sfeVersionText = parent.sfeInfo["SFvx.wSFeSpecMajorVersion"] + '.' + parent.sfeInfo["SFvx.wSFeSpecMinorVersion"];
+        SpessaSynthInfo(`%cThe preset reader detects SFe extended version: %c${sfeVersionText}`,
                                 consoleColors.info,
                                 consoleColors.recognized);
     }

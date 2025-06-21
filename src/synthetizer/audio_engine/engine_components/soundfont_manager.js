@@ -42,16 +42,17 @@ export class SoundFontManager
             const font = this.soundfontList[i];
             /**
              * prevent preset names from the same soundfont from being overriden
-             * if the soundfont has two presets with matching bank and program
+             * if the soundfont has two presets with matching banks and program
              * @type {Set<string>}
              */
             const presets = new Set();
             for (const p of font.soundfont.presets)
             {
-                const bank = Math.min(256, p.bank + font.bankOffset);
-                const bankLSB = Math.min(128, p.bankLSB);
+                const bank = Math.min(255, p.bank + font.bankOffset);
+                const bankLSB = Math.min(127, p.bankLSB);
                 let presetString;
-                if (bank > 127) {
+                if (p.bank > 127 && bank > 127) // Prevent bank offset from activating drums! 
+                {
                     presetString = `${bank - 128}-${bankLSB}-${p.program}-perc`;
                 } else {
                     presetString = `${bank}-${bankLSB}-${p.program}`;
