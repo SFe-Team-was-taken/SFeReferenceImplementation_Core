@@ -9,20 +9,32 @@ export function programChange(programNumber)
     {
         return;
     }
-    // always 128 for percussion
+    // Add 128 with percussion
     let bank = this.getBankSelect();
-    
+    let isDrums;
+    if (bank >= 128)
+    {
+        isDrums = true;
+    } else {
+        isDrums = false;
+    }
     const isXG = this.isXGChannel;
-    const p = this.synth.soundfontManager.getPreset(bank, 0, programNumber, isXG); 
-    // LSB forced to zero above.
-    // This will be fixed once XG hacks are reimplemented.
+    const p = this.synth.soundfontManager.getPreset(bank, this.bankLSB, programNumber, isXG); 
     const preset = p.preset;
     this.setPreset(preset);
-    this.sentBank = Math.min(128, preset.bank + p.bankOffset);
+
+    if (isDrums)
+    {
+        this.sentBank = Math.min(127, preset.bank + p.bankOffset);
+    } else {
+        this.sentBank = Math.min(255, preset.bank + p.bankOffset);
+    }
+
     this.synth.callEvent("programchange", {
         channel: this.channelNumber,
         program: preset.program,
-        bank: this.sentBank
+        bank: this.sentBank,
+        bankLSB: this.bankLSB
     });
     this.sendChannelProperty();
 }

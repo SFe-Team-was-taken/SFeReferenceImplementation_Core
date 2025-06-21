@@ -116,51 +116,54 @@ export function readPresets(presetChunk, parent)
     {
         presets.pop(); // eop is copied and then removed (in the rare edge case that bank of eop is non-zero)
     }
-    
-    let msb127Found = false;
-    let msb120Found = false;
-    presets.forEach(p => 
-        {
-        if (p.bank == 127)
-        {
-            msb127Found = true;
-        } else if (p.bank == 120) {
-            msb120Found = true;
-        }
-    }
-    );
 
-    if (!msb127Found) 
+    if (parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024) // Must be SF2 and not an XG (or GM2) MSB.
     {
-        let shadow127DrumPreset;
-        presets.forEach(p =>
+        let msb127Found = false;
+        let msb120Found = false;
+        presets.forEach(p => 
             {
-                if (p.bank == 128)
-                {
-                    shadow127DrumPreset = new Preset(presetChunk, parent, true);
-                    shadow127DrumPreset = Object.assign(shadow127DrumPreset, p);
-                    shadow127DrumPreset.presetName = shadow127DrumPreset.presetName + " (127)";
-                    shadow127DrumPreset.bank = 127;
-                    presets.push(shadow127DrumPreset);
-                }
-            }
-        )
-    }
-    if (!msb120Found) 
-    {
-        let shadow120DrumPreset;
-        presets.forEach(p =>
+            if (p.bank == 127)
             {
-                if (p.bank == 128)
-                {
-                    shadow120DrumPreset = new Preset(presetChunk, parent, true);
-                    shadow120DrumPreset = Object.assign(shadow120DrumPreset, p);
-                    shadow120DrumPreset.presetName = shadow120DrumPreset.presetName + " (120)";
-                    shadow120DrumPreset.bank = 120;
-                    presets.push(shadow120DrumPreset);
-                }
+                msb127Found = true;
+            } else if (p.bank == 120) {
+                msb120Found = true;
             }
-        )
+        }
+        );
+
+        if (!msb127Found) 
+        {
+            let shadow127DrumPreset;
+            presets.forEach(p =>
+                {
+                    if (p.bank == 128)
+                    {
+                        shadow127DrumPreset = new Preset(presetChunk, parent, true);
+                        shadow127DrumPreset = Object.assign(shadow127DrumPreset, p);
+                        shadow127DrumPreset.presetName = shadow127DrumPreset.presetName + " (127)";
+                        shadow127DrumPreset.bank = 127;
+                        presets.push(shadow127DrumPreset);
+                    }
+                }
+            )
+        }
+        if (!msb120Found) 
+        {
+            let shadow120DrumPreset;
+            presets.forEach(p =>
+                {
+                    if (p.bank == 128)
+                    {
+                        shadow120DrumPreset = new Preset(presetChunk, parent, true);
+                        shadow120DrumPreset = Object.assign(shadow120DrumPreset, p);
+                        shadow120DrumPreset.presetName = shadow120DrumPreset.presetName + " (120)";
+                        shadow120DrumPreset.bank = 120;
+                        presets.push(shadow120DrumPreset);
+                    }
+                }
+            )
+        }
     }
 
     if (((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024)) && presets[presets.length - 1].presetName == "EOP") // Must be SF2 and not an XG (or GM2) MSB.

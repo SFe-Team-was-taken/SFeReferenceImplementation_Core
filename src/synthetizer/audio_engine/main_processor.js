@@ -60,7 +60,8 @@ import { isSystemXG } from "../../utils/xg_hacks.js";
  * @typedef {Object} ProgramChangeCallback
  * @property {number} channel - The MIDI channel number.
  * @property {number} program - The program number.
- * @property {number} bank - The bank number.
+ * @property {number} bank - The bank number (MSB).
+ * @property {number} bankLSB - The bank number (LSB).
  */
 
 /**

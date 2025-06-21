@@ -35,7 +35,7 @@ export function getUsedProgramsAndKeys(soundfont)
             actualBank: bank,
             actualLSB: 0,
             drums: i % 16 === DEFAULT_PERCUSSION, // drums appear on 9 every 16 channels,
-            string: `${bank}:0`
+            string: `${bank}:0:0`
         });
     }
     
@@ -51,9 +51,8 @@ export function getUsedProgramsAndKeys(soundfont)
         {
             /**
              * @type {{preset: BasicPreset, bankOffset: number}}
-             * LSB forced to zero until XG hacks are rewritten
              */
-            let exists = soundfont.getPreset(bank, 0, ch.program, isSystemXG(system));
+            let exists = soundfont.getPreset(bank, ch.bankLSB, ch.program, isSystemXG(system));
             existsBank = exists.preset.bank + exists.bankOffset;
             existsLSB = exists.preset.bankLSB;
             existsProgram = exists.preset.program;
@@ -62,9 +61,8 @@ export function getUsedProgramsAndKeys(soundfont)
         {
             /**
              * @type {BasicPreset}
-             * LSB forced to zero until XG hacks are rewritten
              */
-            let exists = soundfont.getPreset(bank, 0, ch.program, isSystemXG(system));
+            let exists = soundfont.getPreset(bank, ch.bankLSB, ch.program, isSystemXG(system));
             existsBank = exists.bank;
             existsLSB = exists.bankLSB;
             existsProgram = exists.program;

@@ -135,8 +135,8 @@ export function parseBankSelect(bankBefore, bank, system, isLSB, isDrums, channe
 /**
  * Chooses a bank number according to spessasynth logic
  * That is:
- * for GS, bank MSB if not drum, otherwise 128
- * for XG: bank MSB if drum and MSB is valid, 128 othewise, bank MSB if it is SFX voice, LSB otherwise
+ * for GS, bank MSB if not drum, otherwise 128 + MSB
+ * for XG: bank 128 if drums and MSB is invalid, otherwise MSB 
  * @param msb {number}
  * @param lsb {number}
  * @param isDrums {boolean}
@@ -160,26 +160,12 @@ export function chooseBank(msb, lsb, isDrums, isXG)
         }
         else
         {
-            // check for SFX
-            if (isValidXGMSB(msb))
-            {
-                return msb;
-            }
-            // if lsb is 0 and msb is not, use that
-            if (lsb === 0 && msb !== 0)
-            {
-                return msb;
-            }
-            if (!isValidXGMSB(lsb))
-            {
-                return lsb;
-            }
-            return 0;
+            return msb;
         }
     }
     else
     {
-        return isDrums ? 128 : msb;
+        return isDrums ? (128 + msb) : msb;
     }
 }
 

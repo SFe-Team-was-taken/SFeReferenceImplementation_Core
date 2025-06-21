@@ -500,7 +500,7 @@ export function getVoices(channel, midiNote, velocity, realKey)
         program = override.program;
     }
     
-    const cached = this.getCachedVoice(bank, 0, program, midiNote, velocity); // LSB zero until XG hacks rewrite
+    const cached = this.getCachedVoice(bank, channelObject.bankLSB, program, midiNote, velocity);
     // if cached, return it!
     if (cached !== undefined)
     {
@@ -511,7 +511,7 @@ export function getVoices(channel, midiNote, velocity, realKey)
     let preset = channelObject.preset;
     if (overridePatch)
     {
-        preset = this.getPreset(bank, program);
+        preset = this.getPreset(bank, channelObject.bankLSB, program);
     }
-    return this.getVoicesForPreset(preset, bank, 0, program, midiNote, velocity, realKey); // LSB zero until XG hacks rewrite
+    return this.getVoicesForPreset(preset, bank, channelObject.bankLSB, program, midiNote, velocity, realKey);
 }
