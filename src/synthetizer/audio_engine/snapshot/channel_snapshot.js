@@ -10,16 +10,16 @@ export class ChannelSnapshot
     program;
     
     /**
-     * The channel's bank number.
+     * The channel's bank number (MSB).
      * @type {number}
      */
     bank;
     
     /**
-     * If the bank is LSB. For restoring.
+     * The channel's bank number (LSB).
      * @type {boolean}
      */
-    isBankLSB;
+    bankLSB;
     
     /**
      * The name of the patch currently loaded in the channel.
@@ -115,7 +115,7 @@ export class ChannelSnapshot
         // program data
         channelSnapshot.program = channelObject.preset.program;
         channelSnapshot.bank = channelObject.getBankSelect();
-        channelSnapshot.isBankLSB = channelSnapshot.bank !== channelObject.bank;
+        channelSnapshot.bankLSB = channelObject.bankLSB;
         channelSnapshot.lockPreset = channelObject.lockPreset;
         channelSnapshot.lockedSystem = channelObject.lockedSystem;
         channelSnapshot.patchName = channelObject.preset.presetName;
@@ -167,7 +167,8 @@ export class ChannelSnapshot
         
         // restore preset and lock
         channelObject.setPresetLock(false);
-        channelObject.setBankSelect(channelSnapshot.bank, channelSnapshot.isBankLSB);
+        channelObject.setBankSelect(channelSnapshot.bank, false);
+        channelObject.setBankSelect(channelSnapshot.bankLSB, true);
         channelObject.programChange(channelSnapshot.program);
         channelObject.setPresetLock(channelSnapshot.lockPreset);
         channelObject.lockedSystem = channelSnapshot.lockedSystem;
