@@ -242,7 +242,10 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
         "%cWriting PHDR...",
         consoleColors.info
     );
-    const phdrChunk = getPHDR.call(this);
+    const phdrChunk = getPHDR.call(
+        this,
+        options?.bankVersion
+    );
     /**
      * @type {ReturnedExtendedSf2Chunks[]}
      */

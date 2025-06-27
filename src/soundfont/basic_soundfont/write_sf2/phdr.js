@@ -9,7 +9,7 @@ const PHDR_SIZE = 38;
  * @this {BasicSoundBank}
  * @returns {ReturnedExtendedSf2Chunks}
  */
-export function getPHDR()
+export function getPHDR(bankVersion)
 {
     const phdrSize = this.presets.length * PHDR_SIZE + PHDR_SIZE;
     const phdrData = new IndexedByteArray(phdrSize);
@@ -23,7 +23,13 @@ export function getPHDR()
         writeStringAsBytes(xphdrData, preset.presetName.substring(20), 20);
         
         writeWord(phdrData, preset.program);
-        writeWord(phdrData, preset.bank);
+        if (bankVersion = "soundfont2") {
+            writeWord(phdrData, preset.bank); // Don't include LSB on SF2, well-formed SFe banks will be ordered in MSB/LSB order.
+        } else {
+            phdrData[phdrData.currentIndex++] = preset.bank;
+            phdrData[phdrData.currentIndex++] = preset.bankLSB;
+        }
+
         writeWord(phdrData, presetStart & 0xFFFF);
         
         xphdrData.currentIndex += 4;
