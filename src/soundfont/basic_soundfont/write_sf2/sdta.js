@@ -70,7 +70,7 @@ export async function getSDTA(smplStartOffsets,
             consoleColors.info,
             consoleColors.recognized,
             consoleColors.info,
-            s.isContainerised ? consoleColors.recognized : consoleColors.unrecognized,
+            s.isCompressed ? consoleColors.recognized : consoleColors.unrecognized,
             consoleColors.info
         );
         
@@ -108,7 +108,7 @@ export async function getSDTA(smplStartOffsets,
         sdta.set(data, offset + SDTA_TO_DATA_OFFSET);
         let startOffset;
         let endOffset;
-        if (sample.isContainerised)
+        if (sample.isCompressed)
         {
             // sf3 offset is in bytes
             startOffset = offset;

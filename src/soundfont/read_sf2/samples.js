@@ -85,7 +85,7 @@ export class SoundFontSample extends BasicSample
         // SF2 (s16le)
         // SF3 (vorbis)
         // SF2Pack (
-        if (this.isContainerised)
+        if (this.isCompressed)
         {
             // correct loop points
             this.sampleLoopStartIndex += this.startByteOffset / 2;

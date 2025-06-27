@@ -34,7 +34,7 @@ export function getSHDR(smplStartOffsets, smplEndOffsets)
         // loop is stored as relative in sample points, change it to absolute sample points here
         let loopStart = sample.sampleLoopStartIndex + dwStart;
         let loopEnd = sample.sampleLoopEndIndex + dwStart;
-        if (sample.isContainerised)
+        if (sample.isCompressed)
         {
             // https://github.com/FluidSynth/fluidsynth/wiki/SoundFont3Format
             loopStart -= dwStart;

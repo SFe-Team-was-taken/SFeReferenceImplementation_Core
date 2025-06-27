@@ -89,7 +89,7 @@ export class BasicSample
      * The sample data if it was compressed/containerised by spessasynth
      * @type {Uint8Array}
      */
-    containerisedData = undefined;
+    compressedData = undefined;
     
     /**
      * Sample's linked instruments (the instruments that use it)
@@ -193,7 +193,7 @@ export class BasicSample
     async compressSample(encodeVorbis)
     {
         // no need to compress
-        if (this.isContainerised)
+        if (this.isCompressed)
         {
             return;
         }
@@ -387,7 +387,7 @@ export class BasicSample
      */
     setAudioData(audioData)
     {
-        this.isContainerised = false;
+        this.isCompressed = false;
         delete this.compressedData;
         this.sampleData = audioData;
     }
