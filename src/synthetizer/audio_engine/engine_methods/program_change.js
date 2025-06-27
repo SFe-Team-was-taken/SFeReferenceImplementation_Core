@@ -1,3 +1,6 @@
+import { SpessaSynthWarn } from "../../../utils/loggin.js";
+import { BasicPreset } from "../../../soundfont/basic_soundfont/basic_preset.js";
+
 /**
  * executes a program change
  * @param programNumber {number}
@@ -19,8 +22,14 @@ export function programChange(programNumber)
         isDrums = false;
     }
     const isXG = this.isXGChannel;
-    const p = this.synth.soundfontManager.getPreset(bank, this.bankLSB, programNumber, isXG); 
-    const preset = p.preset;
+    const p = this.synth.soundfontManager.getPreset(bank, this.bankLSB, programNumber, isXG);
+    let preset = p.preset;
+    if (!preset)
+    {
+        SpessaSynthWarn("No presets! Using empty fallback.");
+        preset = new BasicPreset(this.synth.soundfontManager.soundfontList[0].soundfont);
+        preset.presetName = "SPESSA EMPTY FALLBACK PRESET";
+    }
     this.setPreset(preset);
 
     if (isDrums)

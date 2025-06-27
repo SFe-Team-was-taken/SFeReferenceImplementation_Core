@@ -175,6 +175,7 @@ export class DLSSample extends BasicSample
             loopEnd
         );
         this.sampleDbAttenuation = sampleDbAttenuation;
+        this.dataOverriden = false;
         /**
          * @type {IndexedByteArray}
          */
@@ -221,23 +222,17 @@ export class DLSSample extends BasicSample
         super.setAudioData(audioData);
     }
     
-    getRawData(allowVorbis = true)
+    getRawData(allowVorbis)
     {
-        if (this.dataOverriden)
+        if (this.dataOverriden || this.isCompressed)
         {
-            return this.encodeS16LE();
+            return super.getRawData(allowVorbis);
         }
-        else
+        if (this.wFormatTag === W_FORMAT_TAG.PCM && this.bytesPerSample === 2)
         {
-            if (this.containerisedData && allowVorbis)
-            {
-                return this.containerisedData;
-            }
-            if (this.wFormatTag === W_FORMAT_TAG.PCM && this.bytesPerSample === 2)
-            {
-                return this.rawData;
-            }
-            return this.encodeS16LE();
+            // copy straight away
+            return this.rawData;
         }
+        return this.encodeS16LE();
     }
 }
