@@ -8,7 +8,7 @@ const BAG_SIZE = 4;
  * @this {BasicSoundBank}
  * @returns {ReturnedExtendedSf2Chunks}
  */
-export function getPBAG()
+export function getPBAG(enable64Bit = false)
 {
     // write all pbag with their start indexes as they were changed in getPGEN() and getPMOD()
     const pbagSize = this.presets.reduce((sum, i) =>
@@ -47,8 +47,8 @@ export function getPBAG()
     writeWord(pbagData, modulatorIndex);
     writeWord(xpbagData, generatorIndex);
     writeWord(xpbagData, modulatorIndex);
-    const pbag = writeRIFFChunkRaw("pbag", pbagData);
-    const xbag = writeRIFFChunkRaw("pbag", xpbagData);
+    const pbag = writeRIFFChunkRaw("pbag", pbagData, enable64Bit);
+    const xbag = writeRIFFChunkRaw("pbag", xpbagData, enable64Bit);
     return {
         pdta: pbag,
         xdta: xbag,

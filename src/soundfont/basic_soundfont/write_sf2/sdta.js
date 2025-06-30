@@ -21,6 +21,13 @@ const SDTA_TO_DATA_OFFSET =
     4 + // "smpl"
     4;  // smpl size
 
+const SDTA_TO_DATA_OFFSET_SFE64 =
+    4 + // "LIST"
+    8 + // sdta size
+    4 + // "sdta"
+    4 + // "smpl"
+    8;  // smpl size
+
 /**
  * @this {BasicSoundBank}
  * @param smplStartOffsets {number[]}
@@ -29,6 +36,7 @@ const SDTA_TO_DATA_OFFSET =
  * @param decompress {boolean}
  * @param vorbisFunc {SampleEncodingFunction}
  * @param progressFunc {ProgressFunction|undefined}
+ * @param enable64Bit {boolean}
  * @returns {Uint8Array}
  */
 export async function getSDTA(smplStartOffsets,
@@ -36,7 +44,8 @@ export async function getSDTA(smplStartOffsets,
                               compress,
                               decompress,
                               vorbisFunc,
-                              progressFunc
+                              progressFunc,
+                              enable64Bit
 )
 {
     // write smpl: write int16 data of each sample linearly
@@ -89,23 +98,46 @@ export async function getSDTA(smplStartOffsets,
         smplChunkSize++;
     }
     
-    const sdta = new IndexedByteArray(smplChunkSize + SDTA_TO_DATA_OFFSET);
+    let sdta;
     
+    if (enable64Bit)
+    {
+        sdta = new IndexedByteArray(smplChunkSize + SDTA_TO_DATA_OFFSET_SFE64);
+    } else {
+        sdta = new IndexedByteArray(smplChunkSize + SDTA_TO_DATA_OFFSET);
+    }
+
     // avoid using writeRIFFChunk for performance
     // sdta chunk
     writeStringAsBytes(sdta, "LIST");
     // "sdta" + full smpl length
-    writeLittleEndian(sdta, smplChunkSize + SDTA_TO_DATA_OFFSET - 8, 4);
+    if (enable64Bit)
+    {
+        writeLittleEndian(sdta, smplChunkSize + SDTA_TO_DATA_OFFSET_SFE64 - 12, 8);
+    } else {
+        writeLittleEndian(sdta, smplChunkSize + SDTA_TO_DATA_OFFSET - 8, 4);
+    }
     writeStringAsBytes(sdta, "sdta");
     writeStringAsBytes(sdta, "smpl");
-    writeLittleEndian(sdta, smplChunkSize, 4);
-    
+    if (enable64Bit)
+    {
+        writeLittleEndian(sdta, smplChunkSize, 8);
+    } else {
+        writeLittleEndian(sdta, smplChunkSize, 4);
+    }
     let offset = 0;
     // write out
     this.samples.forEach((sample, i) =>
     {
         const data = sampleDatas[i];
-        sdta.set(data, offset + SDTA_TO_DATA_OFFSET);
+
+        if (enable64Bit)
+        {
+            sdta.set(data, offset + SDTA_TO_DATA_OFFSET_SFE64);
+        } else {
+            sdta.set(data, offset + SDTA_TO_DATA_OFFSET);
+        }
+
         let startOffset;
         let endOffset;
         if (sample.isCompressed)

@@ -7,7 +7,7 @@ import { MOD_BYTE_SIZE } from "../modulator.js";
  * @this {BasicSoundBank}
  * @returns {ReturnedExtendedSf2Chunks}
  */
-export function getIMOD()
+export function getIMOD(enable64Bit = false)
 {
     // very similar to igen,
     // go through all instruments -> zones and write modulators sequentially
@@ -52,8 +52,8 @@ export function getIMOD()
     const ximodData = new IndexedByteArray(MOD_BYTE_SIZE);
     writeLittleEndian(ximodData, 0, MOD_BYTE_SIZE);
     
-    const imod = writeRIFFChunkRaw("imod", imodData);
-    const ximod = writeRIFFChunkRaw("imod", ximodData);
+    const imod = writeRIFFChunkRaw("imod", imodData, enable64Bit);
+    const ximod = writeRIFFChunkRaw("imod", ximodData, enable64Bit);
     return {
         pdta: imod,
         xdta: ximod,

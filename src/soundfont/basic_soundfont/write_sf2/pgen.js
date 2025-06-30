@@ -9,7 +9,7 @@ import { generatorTypes } from "../generator_types.js";
  * @this {BasicSoundBank}
  * @returns {ReturnedExtendedSf2Chunks}
  */
-export function getPGEN()
+export function getPGEN(enable64Bit = false)
 {
     // almost identical to igen, except the correct instrument instead of sample gen
     // goes through all preset zones and writes generators sequentially (add 4 for terminal)
@@ -81,9 +81,9 @@ export function getPGEN()
     const xpgenData = new IndexedByteArray(GEN_BYTE_SIZE);
     writeDword(xpgenData, 0);
     
-    const pgen = writeRIFFChunkRaw("pgen", pgenData);
+    const pgen = writeRIFFChunkRaw("pgen", pgenData, enable64Bit);
     
-    const xpgen = writeRIFFChunkRaw("pgen", xpgenData);
+    const xpgen = writeRIFFChunkRaw("pgen", xpgenData, enable64Bit);
     return {
         pdta: pgen,
         xdta: xpgen,

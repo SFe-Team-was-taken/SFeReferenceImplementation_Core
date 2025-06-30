@@ -10,7 +10,7 @@ import { SF3_BIT_FLIT } from "../../read_sf2/samples.js";
  * @param smplEndOffsets {number[]}
  * @returns {ReturnedExtendedSf2Chunks}
  */
-export function getSHDR(smplStartOffsets, smplEndOffsets)
+export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
 {
     const sampleLength = 46;
     const shdrSize = sampleLength * (this.samples.length + 1); // +1 because EOP
@@ -25,11 +25,23 @@ export function getSHDR(smplStartOffsets, smplEndOffsets)
         writeStringAsBytes(xshdrData, sample.sampleName.substring(20), 20);
         // start offset
         const dwStart = smplStartOffsets[index];
-        writeDword(shdrData, dwStart);
+        if (enable64Bit)
+        {
+            writeDword(shdrData, Math.max(0, dwStart) & 0xFFFFFFFF);
+            writeDword(xshdrData, Math.max(0, dwStart) >> 32);
+        } else {
+            writeDword(shdrData, dwStart);
+        }
         xshdrData.currentIndex += 4;
         // end offset
         const dwEnd = smplEndOffsets[index];
-        writeDword(shdrData, dwEnd);
+        if (enable64Bit)
+        {
+            writeDword(shdrData, Math.max(0, dwEnd) & 0xFFFFFFFF);
+            writeDword(xshdrData, Math.max(0, dwEnd) >> 32);
+        } else {
+            writeDword(shdrData, dwEnd);
+        }
         xshdrData.currentIndex += 4;
         // loop is stored as relative in sample points, change it to absolute sample points here
         let loopStart = sample.sampleLoopStartIndex + dwStart;
@@ -40,8 +52,20 @@ export function getSHDR(smplStartOffsets, smplEndOffsets)
             loopStart -= dwStart;
             loopEnd -= dwStart;
         }
-        writeDword(shdrData, loopStart);
-        writeDword(shdrData, loopEnd);
+        if (enable64Bit)
+        {
+            writeDword(shdrData, Math.max(0, loopStart) & 0xFFFFFFFF);
+            writeDword(xshdrData, Math.max(0, loopStart) >> 32);
+        } else {
+            writeDword(shdrData, loopStart);
+        }
+        if (enable64Bit)
+        {
+            writeDword(shdrData, Math.max(0, loopEnd) & 0xFFFFFFFF);
+            writeDword(xshdrData, Math.max(0, loopEnd) >> 32);
+        } else {
+            writeDword(shdrData, loopEnd);
+        }
         // sample rate
         writeDword(shdrData, sample.sampleRate);
         // pitch and correction
@@ -67,8 +91,8 @@ export function getSHDR(smplStartOffsets, smplEndOffsets)
     // write EOS and zero everything else
     writeStringAsBytes(shdrData, "EOS", sampleLength);
     writeStringAsBytes(xshdrData, "EOS", sampleLength);
-    const shdr = writeRIFFChunkRaw("shdr", shdrData);
-    const xshdr = writeRIFFChunkRaw("shdr", xshdrData);
+    const shdr = writeRIFFChunkRaw("shdr", shdrData, enable64Bit);
+    const xshdr = writeRIFFChunkRaw("shdr", xshdrData, enable64Bit);
     return {
         pdta: shdr,
         xdta: xshdr,

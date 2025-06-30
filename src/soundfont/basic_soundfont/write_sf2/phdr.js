@@ -9,7 +9,7 @@ const PHDR_SIZE = 38;
  * @this {BasicSoundBank}
  * @returns {ReturnedExtendedSf2Chunks}
  */
-export function getPHDR(bankVersion)
+export function getPHDR(bankVersion, enable64Bit = false)
 {
     const phdrSize = this.presets.length * PHDR_SIZE + PHDR_SIZE;
     const phdrData = new IndexedByteArray(phdrSize);
@@ -55,9 +55,9 @@ export function getPHDR(bankVersion)
     writeWord(xphdrData, presetStart >> 16);
     xphdrData.currentIndex += 12;// library, genre, morphology
     
-    const phdr = writeRIFFChunkRaw("phdr", phdrData);
+    const phdr = writeRIFFChunkRaw("phdr", phdrData, false, false, enable64Bit);
     
-    const xphdr = writeRIFFChunkRaw("phdr", xphdrData);
+    const xphdr = writeRIFFChunkRaw("phdr", xphdrData, false, false, enable64Bit);
     
     return {
         pdta: phdr,

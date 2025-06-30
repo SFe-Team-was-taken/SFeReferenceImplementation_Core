@@ -9,7 +9,7 @@ const INST_SIZE = 22;
  * @this {BasicSoundBank}
  * @returns {ReturnedExtendedSf2Chunks}
  */
-export function getINST()
+export function getINST(enable64Bit = false)
 {
     const instSize = this.instruments.length * INST_SIZE + INST_SIZE;
     const instData = new IndexedByteArray(instSize);
@@ -31,8 +31,8 @@ export function getINST()
     writeWord(instData, instrumentStart & 0xFFFF);
     writeWord(xinstData, instrumentStart >> 16);
     
-    const inst = writeRIFFChunkRaw("inst", instData);
-    const xinst = writeRIFFChunkRaw("inst", xinstData);
+    const inst = writeRIFFChunkRaw("inst", instData, enable64Bit);
+    const xinst = writeRIFFChunkRaw("inst", xinstData, enable64Bit);
     
     return {
         pdta: inst,

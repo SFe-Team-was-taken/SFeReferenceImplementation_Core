@@ -8,7 +8,7 @@ const BAG_SIZE = 4;
  * @this {BasicSoundBank}
  * @returns {ReturnedExtendedSf2Chunks}
  */
-export function getIBAG()
+export function getIBAG(enable64Bit = false)
 {
     // write all ibag with their start indexes as they were changed in getIGEN() and getIMOD()
     const ibagSize = this.instruments.reduce(
@@ -50,8 +50,8 @@ export function getIBAG()
     writeWord(ibagData, modulatorIndex & 0xFFFF);
     writeWord(xibagData, generatorIndex >> 16);
     writeWord(xibagData, modulatorIndex >> 16);
-    const ibag = writeRIFFChunkRaw("ibag", ibagData);
-    const xibag = writeRIFFChunkRaw("ibag", xibagData);
+    const ibag = writeRIFFChunkRaw("ibag", ibagData, enable64Bit);
+    const xibag = writeRIFFChunkRaw("ibag", xibagData, enable64Bit);
     return {
         pdta: ibag,
         xdta: xibag,

@@ -36,7 +36,7 @@ import { fillWithDefaults } from "../../../utils/fill_with_defaults.js";
  * Recommended.
  * @property {boolean} decompress - if an sf3 bank should be decompressed back to sf2. Not recommended.
  * @property {string} bankVersion - version of SF bank to write.
- * @property {boolean} force32Bit - force writing as 32-bit. Not recommended.
+ * @property {boolean} enable64Bit - enable 64-bit. Recommended only for supported players.
  */
 
 
@@ -59,7 +59,7 @@ const DEFAULT_WRITE_OPTIONS = {
     writeExtendedLimits: true,
     decompress: false,
     bankVersion: "sfe-4.0",
-    force32Bit: false
+    enable64Bit: false
 };
 
 /**
@@ -81,6 +81,14 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
         {
             throw new Error("Decompressed and compressed at the same time.");
         }
+    }
+    if (options?.bankVersion == "soundfont2" && options?.enable64Bit == true)
+    {
+        throw new Error("64-bit chunk headers can only be used with SFe.");
+    }
+    if (options?.bankVersion == "sfe-4.0" && options?.writeExtendedLimits == false)
+    {
+        throw new Error("64-bit chunk headers require use of the xdta sub-chunk."); // the 64-bit sample indices are stored in xshdr
     }
     SpessaSynthGroupCollapsed(
         "%cSaving soundfont...",
@@ -112,10 +120,10 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
         if (options?.bankVersion == "soundfont2") // 2.01 usage will be added when proper 24-bit is added
         {
             this.soundFontInfo["ifil"] = "2.4"; // set version to 2.04
-        } else if (options?.bankVersion == "sfe-4.0" && this.soundFontInfo["ifil.wMajor"] == 3) {
+        } else if (options?.bankVersion == "sfe-4.0" && options?.enable64Bit == false) {
             this.soundFontInfo["ifil"] = "2.1024"; // set version to 2.1024 (SFe)
-        } else if (options?.bankVersion == "sfe-4.0" && this.soundFontInfo["ifil.wMajor"] == 4) {
-            this.soundFontInfo["ifil"] = "4.0"; // set version to 4.0 (SFe)            
+        } else if (options?.bankVersion == "sfe-4.0" && options?.enable64Bit == true) {
+            this.soundFontInfo["ifil"] = "4.0"; // set version to 4.0 (SFe)
         } else {
             throw new Error("Invalid bank version!");
         }
@@ -141,7 +149,7 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
             const ckdata = new IndexedByteArray(4);
             writeWord(ckdata, major);
             writeWord(ckdata, minor);
-            infoArrays.push(writeRIFFChunkRaw(type, ckdata));
+            infoArrays.push(writeRIFFChunkRaw(type, ckdata, false, false, options?.enable64Bit));
         }
         else if (type === "DMOD")
         {
@@ -166,13 +174,16 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
             // terminal modulator, is zero
             writeLittleEndian(dmoddata, 0, MOD_BYTE_SIZE);
             
-            infoArrays.push(writeRIFFChunkRaw(type, dmoddata));
+            infoArrays.push(writeRIFFChunkRaw(type, dmoddata, false, false, options?.enable64Bit));
         }
         else
         {
             infoArrays.push(writeRIFFChunkRaw(
                 type,
-                getStringBytes(data, true, true) // pad with zero and ensure even length
+                getStringBytes(data, true, true), // pad with zero and ensure even length
+                false,
+                false,
+                options?.enable64Bit
             ));
         }
     }
@@ -205,50 +216,77 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
         "%cWriting SHDR...",
         consoleColors.info
     );
-    const shdrChunk = getSHDR.call(this, smplStartOffsets, smplEndOffsets);
+    const shdrChunk = getSHDR.call(
+        this, 
+        smplStartOffsets, 
+        smplEndOffsets,
+        options?.enable64Bit
+    );
     SpessaSynthInfo(
         "%cWriting IGEN...",
         consoleColors.info
     );
-    const igenChunk = getIGEN.call(this);
+    const igenChunk = getIGEN.call(
+        this,
+        options?.enable64Bit
+    );
     SpessaSynthInfo(
         "%cWriting IMOD...",
         consoleColors.info
     );
-    const imodChunk = getIMOD.call(this);
+    const imodChunk = getIMOD.call(
+        this,
+        options?.enable64Bit
+    );
     SpessaSynthInfo(
         "%cWriting IBAG...",
         consoleColors.info
     );
-    const ibagChunk = getIBAG.call(this);
+    const ibagChunk = getIBAG.call(
+        this,
+        options?.enable64Bit
+    );
     SpessaSynthInfo(
         "%cWriting INST...",
         consoleColors.info
     );
-    const instChunk = getINST.call(this);
+    const instChunk = getINST.call(
+        this,
+        options?.enable64Bit
+    );
     SpessaSynthInfo(
         "%cWriting PGEN...",
         consoleColors.info
     );
     // presets
-    const pgenChunk = getPGEN.call(this);
+    const pgenChunk = getPGEN.call(
+        this,
+        options?.enable64Bit
+    );
     SpessaSynthInfo(
         "%cWriting PMOD...",
         consoleColors.info
     );
-    const pmodChunk = getPMOD.call(this);
+    const pmodChunk = getPMOD.call(
+        this,
+        options?.enable64Bit
+    );
     SpessaSynthInfo(
         "%cWriting PBAG...",
         consoleColors.info
     );
-    const pbagChunk = getPBAG.call(this);
+    const pbagChunk = getPBAG.call(
+        this,
+        options?.enable64Bit
+    );
     SpessaSynthInfo(
         "%cWriting PHDR...",
         consoleColors.info
     );
     const phdrChunk = getPHDR.call(
         this,
-        options?.bankVersion
+        options?.bankVersion,
+        options?.enable64Bit
     );
     /**
      * @type {ReturnedExtendedSf2Chunks[]}

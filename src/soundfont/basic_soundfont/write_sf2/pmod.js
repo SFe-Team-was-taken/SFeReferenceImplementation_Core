@@ -7,7 +7,7 @@ import { MOD_BYTE_SIZE } from "../modulator.js";
  * @this {BasicSoundBank}
  * @returns {ReturnedExtendedSf2Chunks}
  */
-export function getPMOD()
+export function getPMOD(enable64Bit = false)
 {
     // very similar to imod,
     // go through all presets -> zones and write modulators sequentially
@@ -52,8 +52,8 @@ export function getPMOD()
     const xpmodData = new IndexedByteArray(MOD_BYTE_SIZE);
     writeLittleEndian(xpmodData, 0, MOD_BYTE_SIZE);
     
-    const pmod = writeRIFFChunkRaw("pmod", pmodData);
-    const xpmod = writeRIFFChunkRaw("pmod", xpmodData);
+    const pmod = writeRIFFChunkRaw("pmod", pmodData, enable64Bit);
+    const xpmod = writeRIFFChunkRaw("pmod", xpmodData, enable64Bit);
     return {
         pdta: pmod,
         xdta: xpmod,
