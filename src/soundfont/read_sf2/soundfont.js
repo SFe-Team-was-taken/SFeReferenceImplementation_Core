@@ -59,14 +59,17 @@ export class SoundFont2 extends BasicSoundBank
         const firstFourCC = new IndexedByteArray(mainFileArray.slice(0,4));
         let firstFourCCString = readBytesAsString(firstFourCC, 4);
         let is64Bit;
+        let chunkBacktrack;
 
         switch (firstFourCCString.toLowerCase())
         {
             case "riff":
                 is64Bit = false;
+                chunkBacktrack = 12;
                 break;
             case "rifs":
                 is64Bit = true;
+                chunkBacktrack = 16;
                 break;
             default:
                 SpessaSynthGroupEnd();
@@ -454,7 +457,7 @@ export class SoundFont2 extends BasicSoundBank
                  */
                 sampleData = stbvorbis.decode(mainFileArray.buffer.slice(
                     mainFileArray.currentIndex,
-                    mainFileArray.currentIndex + sdtaChunk.size - 12
+                    mainFileArray.currentIndex + sdtaChunk.size - chunkBacktrack
                 )).data[0];
             }
             catch (e)
@@ -478,11 +481,11 @@ export class SoundFont2 extends BasicSoundBank
         }
         
         SpessaSynthInfo(
-            `%cSkipping sample chunk, length: %c${sdtaChunk.size - 12}`,
+            `%cSkipping sample chunk, length: %c${sdtaChunk.size - chunkBacktrack}`,
             consoleColors.info,
             consoleColors.value
         );
-        mainFileArray.currentIndex += sdtaChunk.size - 12;
+        mainFileArray.currentIndex += sdtaChunk.size - chunkBacktrack;
         
         // PDTA
         SpessaSynthInfo("%cLoading preset data chunk...", consoleColors.warn);
