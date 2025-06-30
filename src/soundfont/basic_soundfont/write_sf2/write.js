@@ -35,7 +35,8 @@ import { fillWithDefaults } from "../../../utils/fill_with_defaults.js";
  * @property {boolean} writeExtendedLimits - if the xdta chunk should be written to allow virtually infinite parameters.
  * Recommended.
  * @property {boolean} decompress - if an sf3 bank should be decompressed back to sf2. Not recommended.
- * @property {boolean} bankVersion - version of SF bank to write.
+ * @property {string} bankVersion - version of SF bank to write.
+ * @property {boolean} force32Bit - force writing as 32-bit. Not recommended.
  */
 
 
@@ -57,7 +58,8 @@ const DEFAULT_WRITE_OPTIONS = {
     writeDefaultModulators: true,
     writeExtendedLimits: true,
     decompress: false,
-    bankVersion: "sfe-4.0"
+    bankVersion: "sfe-4.0",
+    force32Bit: false
 };
 
 /**
@@ -110,8 +112,10 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
         if (options?.bankVersion == "soundfont2") // 2.01 usage will be added when proper 24-bit is added
         {
             this.soundFontInfo["ifil"] = "2.4"; // set version to 2.04
-        } else if (options?.bankVersion == "sfe-4.0") {
+        } else if (options?.bankVersion == "sfe-4.0" && this.soundFontInfo["ifil.wMajor"] == 3) {
             this.soundFontInfo["ifil"] = "2.1024"; // set version to 2.1024 (SFe)
+        } else if (options?.bankVersion == "sfe-4.0" && this.soundFontInfo["ifil.wMajor"] == 4) {
+            this.soundFontInfo["ifil"] = "4.0"; // set version to 4.0 (SFe)            
         } else {
             throw new Error("Invalid bank version!");
         }

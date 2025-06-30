@@ -1,5 +1,5 @@
 import { IndexedByteArray } from "../../utils/indexed_array.js";
-import { readLittleEndian, writeDword } from "../../utils/byte_functions/little_endian.js";
+import { readLittleEndian, writeDword, writeQword } from "../../utils/byte_functions/little_endian.js";
 import { readBytesAsString, writeStringAsBytes } from "../../utils/byte_functions/string.js";
 
 /**
@@ -97,11 +97,19 @@ export function readRIFFChunk(dataArray, readData = true, forceShift = false, ri
  * @param data {Uint8Array} chunk data
  * @param addZeroByte {boolean} add a zero byte into the chunk size
  * @param isList {boolean} adds "LIST" as the chunk type and writes the actual type at the start of the data
+ * @param rifs {boolean} whether the chunk is 64-bit (RIFF-like simple 64-bit)
  * @returns {IndexedByteArray}
  */
-export function writeRIFFChunkRaw(header, data, addZeroByte = false, isList = false)
+export function writeRIFFChunkRaw(header, data, addZeroByte = false, isList = false, rifs = false)
 {
-    let dataStartOffset = 8;
+    let dataStartOffset;
+
+    if (rifs) {
+        dataStartOffset = 12;
+    } else {
+        dataStartOffset = 8;
+    }
+
     let headerWritten = header;
     let dataLength = data.length;
     if (addZeroByte)
@@ -127,7 +135,11 @@ export function writeRIFFChunkRaw(header, data, addZeroByte = false, isList = fa
     // FourCC ("RIFF", "LIST", "pdta" etc.)
     writeStringAsBytes(outArray, headerWritten);
     // chunk size
-    writeDword(outArray, writtenSize);
+    if (rifs) {
+        writeQword(outArray, writtenSize);
+    } else {
+        writeDword(outArray, writtenSize);
+    }
     if (isList)
     {
         // list type (e.g. "INFO")
@@ -142,11 +154,17 @@ export function writeRIFFChunkRaw(header, data, addZeroByte = false, isList = fa
  * @param header {string} fourCC
  * @param chunks {Uint8Array[]} chunk data parts, it will be combined in order
  * @param isList {boolean} adds "LIST" as the chunk type and writes the actual type at the start of the data
+ * @param rifs {boolean} whether the chunk is 64-bit (RIFF-like simple 64-bit)
  * @returns {IndexedByteArray}
  */
-export function writeRIFFChunkParts(header, chunks, isList = false)
+export function writeRIFFChunkParts(header, chunks, isList = false, rifs = false)
 {
-    let dataOffset = 8;
+    let dataOffset;
+    if (rifs) {
+        dataOffset = 12;
+    } else {
+        dataOffset = 8;
+    }
     let headerWritten = header;
     let dataLength = chunks.reduce((len, c) => c.length + len, 0);
     let writtenSize = dataLength;
@@ -168,7 +186,11 @@ export function writeRIFFChunkParts(header, chunks, isList = false)
     // fourCC ("RIFF", "LIST", "pdta" etc.)
     writeStringAsBytes(outArray, headerWritten);
     // chunk size
-    writeDword(outArray, writtenSize);
+    if (rifs) {
+        writeQword(outArray, writtenSize);
+    } else {
+        writeDword(outArray, writtenSize);
+    }
     if (isList)
     {
         // list type (e.g. "INFO")

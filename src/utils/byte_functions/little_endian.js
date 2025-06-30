@@ -49,6 +49,15 @@ export function writeDword(dataArray, dword)
 }
 
 /**
+ * @param dataArray {IndexedByteArray}
+ * @param qword {number}
+ */
+export function writeQword(dataArray, qword)
+{
+    writeLittleEndian(dataArray, qword, 8);
+}
+
+/**
  * @param byte1 {number}
  * @param byte2 {number}
  * @returns {number}

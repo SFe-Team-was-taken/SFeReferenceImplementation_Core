@@ -114,6 +114,7 @@ export class SoundFont2 extends BasicSoundBank
                     // 64-bit chunk headers can only be used with SFe.
                     case "sfen":
                         bankType = "sfe64";
+                        SpessaSynthInfo("64-bit mode enabled! Aw yeah!!!");
                 }
                 break;
         }
