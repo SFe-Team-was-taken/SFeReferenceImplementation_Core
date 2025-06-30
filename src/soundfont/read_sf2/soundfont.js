@@ -55,14 +55,28 @@ export class SoundFont2 extends BasicSoundBank
             this.parsingError("No data provided!");
         }
         
-        // read the main read
-        let firstChunk = readRIFFChunk(mainFileArray, false);
-        const firstHeader = firstChunk.header.toLowerCase();
-        if (firstHeader !== "riff" && firstHeader !== "rf64")
+        // Get header first
+        const firstFourCC = new IndexedByteArray(mainFileArray.slice(0,4));
+        let firstFourCCString = readBytesAsString(firstFourCC, 4);
+        let is64Bit;
+
+        switch (firstFourCCString.toLowerCase())
         {
-            SpessaSynthGroupEnd();
-            this.parsingError(`Invalid chunk header! Expected "riff" or "rf64" got "${firstHeader}"`);
+            case "riff":
+                is64Bit = false;
+                break;
+            case "rifs":
+                is64Bit = true;
+                break;
+            default:
+                SpessaSynthGroupEnd();
+                this.parsingError(`Invalid chunk header! Expected "riff" or "rifs" got "${firstFourCCString}"`);
         }
+
+        // read the main read
+        let firstChunk = readRIFFChunk(mainFileArray, false, false, is64Bit);
+        const firstHeader = firstChunk.header.toLowerCase();
+
         const type = readBytesAsString(mainFileArray, 4).toLowerCase();
         if (type !== "sfbk" && type !== "sfpk" && type !== "sfen")
         {
@@ -91,7 +105,7 @@ export class SoundFont2 extends BasicSoundBank
                         bankType = "sfe32";
                 }
                 break;
-            case "rf64":
+            case "rifs":
                 switch (type)
                 {
                     // 64-bit chunk headers can only be used with SFe.
@@ -109,7 +123,7 @@ export class SoundFont2 extends BasicSoundBank
         }
         
         // INFO
-        let infoChunk = readRIFFChunk(mainFileArray);
+        let infoChunk = readRIFFChunk(mainFileArray, true, false, is64Bit);
         this.verifyHeader(infoChunk, "list");
         const infoString = readBytesAsString(infoChunk.chunkData, 4);
         if (infoString !== "INFO")
@@ -126,7 +140,7 @@ export class SoundFont2 extends BasicSoundBank
         
         while (infoChunk.chunkData.length > infoChunk.chunkData.currentIndex)
         {
-            let chunk = readRIFFChunk(infoChunk.chunkData);
+            let chunk = readRIFFChunk(infoChunk.chunkData, true, false, is64Bit);
             let text;
             let sfeVersion;
             // special cases
@@ -362,7 +376,7 @@ export class SoundFont2 extends BasicSoundBank
                     const listType = readBytesAsString(chunk.chunkData, 4);
                     if (listType === "ISFe")
                     {
-                        let sfeInfo = loadSFeInfo(chunk.chunkData, false);
+                        let sfeInfo = loadSFeInfo(chunk.chunkData, is64Bit);
                         this.sfeInfo = sfeInfo.sfeInfo;
                     } else if (listType === "xdta")
                     {
@@ -402,25 +416,25 @@ export class SoundFont2 extends BasicSoundBank
         if (isExtended)
         {
             // read the hydra chunks
-            xChunks.phdr = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.pbag = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.pmod = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.pgen = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.inst = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.ibag = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.imod = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.igen = readRIFFChunk(xdtaChunk.chunkData);
-            xChunks.shdr = readRIFFChunk(xdtaChunk.chunkData);
+            xChunks.phdr = readRIFFChunk(xdtaChunk.chunkData, true, false, is64Bit);
+            xChunks.pbag = readRIFFChunk(xdtaChunk.chunkData, true, false, is64Bit);
+            xChunks.pmod = readRIFFChunk(xdtaChunk.chunkData, true, false, is64Bit);
+            xChunks.pgen = readRIFFChunk(xdtaChunk.chunkData, true, false, is64Bit);
+            xChunks.inst = readRIFFChunk(xdtaChunk.chunkData, true, false, is64Bit);
+            xChunks.ibag = readRIFFChunk(xdtaChunk.chunkData, true, false, is64Bit);
+            xChunks.imod = readRIFFChunk(xdtaChunk.chunkData, true, false, is64Bit);
+            xChunks.igen = readRIFFChunk(xdtaChunk.chunkData, true, false, is64Bit);
+            xChunks.shdr = readRIFFChunk(xdtaChunk.chunkData, true, false, is64Bit);
         }
         
         // SDTA
-        const sdtaChunk = readRIFFChunk(mainFileArray, false);
+        const sdtaChunk = readRIFFChunk(mainFileArray, false, false, is64Bit);
         this.verifyHeader(sdtaChunk, "list");
         this.verifyText(readBytesAsString(mainFileArray, 4), "sdta");
         
         // smpl
         SpessaSynthInfo("%cVerifying smpl chunk...", consoleColors.warn);
-        let sampleDataChunk = readRIFFChunk(mainFileArray, false);
+        let sampleDataChunk = readRIFFChunk(mainFileArray, false, false, is64Bit);
         this.verifyHeader(sampleDataChunk, "smpl");
         /**
          * @type {IndexedByteArray|Float32Array}
@@ -472,36 +486,36 @@ export class SoundFont2 extends BasicSoundBank
         
         // PDTA
         SpessaSynthInfo("%cLoading preset data chunk...", consoleColors.warn);
-        let presetChunk = readRIFFChunk(mainFileArray);
+        let presetChunk = readRIFFChunk(mainFileArray, true, false, is64Bit);
         this.verifyHeader(presetChunk, "list");
         readBytesAsString(presetChunk.chunkData, 4);
         
         // read the hydra chunks
-        const phdrChunk = readRIFFChunk(presetChunk.chunkData);
+        const phdrChunk = readRIFFChunk(presetChunk.chunkData, true, false, is64Bit);
         this.verifyHeader(phdrChunk, "phdr");
         
-        const pbagChunk = readRIFFChunk(presetChunk.chunkData);
+        const pbagChunk = readRIFFChunk(presetChunk.chunkData, true, false, is64Bit);
         this.verifyHeader(pbagChunk, "pbag");
         
-        const pmodChunk = readRIFFChunk(presetChunk.chunkData);
+        const pmodChunk = readRIFFChunk(presetChunk.chunkData, true, false, is64Bit);
         this.verifyHeader(pmodChunk, "pmod");
         
-        const pgenChunk = readRIFFChunk(presetChunk.chunkData);
+        const pgenChunk = readRIFFChunk(presetChunk.chunkData, true, false, is64Bit);
         this.verifyHeader(pgenChunk, "pgen");
         
-        const instChunk = readRIFFChunk(presetChunk.chunkData);
+        const instChunk = readRIFFChunk(presetChunk.chunkData, true, false, is64Bit);
         this.verifyHeader(instChunk, "inst");
         
-        const ibagChunk = readRIFFChunk(presetChunk.chunkData);
+        const ibagChunk = readRIFFChunk(presetChunk.chunkData, true, false, is64Bit);
         this.verifyHeader(ibagChunk, "ibag");
         
-        const imodChunk = readRIFFChunk(presetChunk.chunkData);
+        const imodChunk = readRIFFChunk(presetChunk.chunkData, true, false, is64Bit);
         this.verifyHeader(imodChunk, "imod");
         
-        const igenChunk = readRIFFChunk(presetChunk.chunkData);
+        const igenChunk = readRIFFChunk(presetChunk.chunkData, true, false, is64Bit);
         this.verifyHeader(igenChunk, "igen");
         
-        const shdrChunk = readRIFFChunk(presetChunk.chunkData);
+        const shdrChunk = readRIFFChunk(presetChunk.chunkData, true, false, is64Bit);
         this.verifyHeader(shdrChunk, "shdr");
         
         /**
@@ -521,9 +535,15 @@ export class SoundFont2 extends BasicSoundBank
                 {
                     s.sampleName += xSamples[i].sampleName;
                     s.linkedSampleIndex |= xSamples[i].linkedSampleIndex << 16;
+                    if (is64Bit)
+                    {
+                        s.sampleStartIndex |= xSamples[i].sampleStartIndex << 32;
+                        s.sampleEndIndex |= xSamples[i].sampleEndIndex << 32;
+                        s.sampleLoopStartIndex |= xSamples[i].sampleLoopStartIndex << 32;
+                        s.sampleLoopEndIndex |= xSamples[i].sampleLoopEndIndex << 32;
+                    }
                 });
             }
-            
         }
         // trim names
         samples.forEach(s => s.sampleName = s.sampleName.trim());

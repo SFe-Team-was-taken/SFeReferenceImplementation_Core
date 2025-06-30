@@ -23,7 +23,7 @@ export class SFeInfo extends BasicSoundBank
      * @param arrayBuffer {ArrayBuffer}
      * @param warnDeprecated {boolean}
      */
-    constructor(arrayBuffer, warnDeprecated = true)
+    constructor(arrayBuffer, is64Bit = false)
     {
         super();
         this.dataArray = new IndexedByteArray(arrayBuffer);
@@ -38,7 +38,7 @@ export class SFeInfo extends BasicSoundBank
         let sfeVersion;
         while (this.dataArray.length > this.dataArray.currentIndex)
         {
-            chunk = readRIFFChunk(this.dataArray);
+            chunk = readRIFFChunk(this.dataArray, true, false, is64Bit);
             text = readBytesAsString(chunk.chunkData, chunk.chunkData.length);
             switch (chunk.header.toLowerCase())
             {
@@ -277,9 +277,9 @@ export class SFeInfo extends BasicSoundBank
 
 }
 
-export function loadSFeInfo(buffer)
+export function loadSFeInfo(buffer, is64Bit)
 {
-    return new SFeInfo(buffer, false);
+    return new SFeInfo(buffer, is64Bit);
 }
 
     
