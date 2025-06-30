@@ -167,7 +167,7 @@ export class SoundFont2 extends BasicSoundBank
                             case `4`:
                                 if (bankType === "sfe64")
                                 {
-                                    const sfeVersion = text;
+                                    sfeVersion = text;
                                 } else {
                                     SpessaSynthWarn(`Bank version not fully supported: "${text}"`)
                                 }
