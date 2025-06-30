@@ -9,7 +9,7 @@ import { consoleColors } from "../../utils/other.js";
 import { write } from "./write_sf2/write.js";
 import { sfeDefaultModulators, Modulator } from "./modulator.js";
 import { writeDLS } from "./write_dls/write_dls.js";
-import { BasicSample } from "./basic_sample.js";
+import { BasicSample, sampleTypes } from "./basic_sample.js";
 import { Generator } from "./generator.js";
 import { BasicInstrument } from "./basic_instrument.js";
 import { BasicPreset } from "./basic_preset.js";
@@ -157,7 +157,7 @@ class BasicSoundBank
             44100,
             65,
             20,
-            0,
+            sampleTypes.monoSample,
             0,
             127
         );
