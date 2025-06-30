@@ -6,7 +6,7 @@ import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_sync.min.js"
 const RESAMPLE_RATE = 48000;
 
 /**
- * @typedef {1|2|4|8|32769|32770|32772|32776} sampleTypes
+ * @typedef {1|2|4|8|17|49|81|113|114|116|120|32769|32770|32772|32776|32785|32817|32849|32881|32882|32884|32888} sampleTypes
  */
 
 /**

@@ -157,6 +157,7 @@ export class SoundFont2 extends BasicSoundBank
                     // Legacy code for combined ifil/iver value representation
                     // Separated values are useful for implementation of SFe
                     text = `${wMajor}.${wMinor}`;
+                    this.soundFontInfo[chunk.header] = text;
                     this.soundFontInfo[chunk.header + ".wMajor"] = wMajor;
                     this.soundFontInfo[chunk.header + ".wMinor"] = wMinor;
                     SpessaSynthInfo(

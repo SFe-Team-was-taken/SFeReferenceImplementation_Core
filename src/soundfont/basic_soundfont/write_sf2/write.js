@@ -82,6 +82,16 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
             throw new Error("Decompressed and compressed at the same time.");
         }
     }
+
+    switch(options?.bankVersion)
+    {
+        case ("soundfont2"):
+            break;
+        case ("sfe-4.0"):
+            break;
+        default:
+            throw new Error(`Invalid bank version: "${options?.bankVersion}"`);
+    }
     if (options?.bankVersion == "soundfont2" && options?.enable64Bit == true)
     {
         throw new Error("64-bit chunk headers can only be used with SFe.");
@@ -128,7 +138,7 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
             throw new Error("Invalid bank version!");
         }
     }
-    
+    this.soundFontInfo["ifil"] = this.soundFontInfo["ifil.wMajor"] + "." + this.soundFontInfo["ifil.wMinor"];
     if (options?.writeDefaultModulators)
     {
         // trigger the DMOD write
@@ -142,6 +152,7 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
     
     for (const [type, data] of Object.entries(this.soundFontInfo))
     {
+        console.log(type);
         if (type === "ifil" || type === "iver")
         {
             const major = parseInt(data.split(".")[0]);
@@ -175,6 +186,16 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
             writeLittleEndian(dmoddata, 0, MOD_BYTE_SIZE);
             
             infoArrays.push(writeRIFFChunkRaw(type, dmoddata, false, false, options?.enable64Bit));
+        }
+        else if (type === "ifil.wMajor" || type === "ifil.wMinor" || type === "iver.wMajor" || type === "iver.wMinor")
+        {
+            // These are SpessaSynth internal values and must not be written
+            console.log(`Ignoring property: ${type}`);
+        }
+        else if (type === "ICRD.year" || type === "ICRD.month" || type === "ICRD.day" || type === "ICRD.hour" || type === "ICRD.minute" || type === "ICRD.second")
+        {
+            // These are SpessaSynth internal values and must not be written
+            console.log(`Ignoring property: ${type}`);
         }
         else
         {
@@ -341,7 +362,7 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
     } else {
         main = writeRIFFChunkParts(
             "RIFF",
-            [getStringBytes("sfen"), infoChunk, sdtaChunk, pdtaChunk],
+            [getStringBytes("sfbk"), infoChunk, sdtaChunk, pdtaChunk],
             false,
             options?.enable64Bit
         );
