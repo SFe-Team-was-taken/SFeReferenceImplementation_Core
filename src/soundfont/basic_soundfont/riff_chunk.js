@@ -47,13 +47,19 @@ export class RiffChunk
  * @param dataArray {IndexedByteArray}
  * @param readData {boolean}
  * @param forceShift {boolean}
+ * @param rifs {boolean}
  * @returns {RiffChunk}
  */
-export function readRIFFChunk(dataArray, readData = true, forceShift = false)
+export function readRIFFChunk(dataArray, readData = true, forceShift = false, rifs = false)
 {
     let header = readBytesAsString(dataArray, 4);
-    
-    let size = readLittleEndian(dataArray, 4);
+    let size;
+    if (rifs) 
+    {
+        size = readLittleEndian(dataArray, 8);
+    } else {
+        size = readLittleEndian(dataArray, 4);
+    }
     if (header === "")
     {
         // safeguard against evil DLS files
