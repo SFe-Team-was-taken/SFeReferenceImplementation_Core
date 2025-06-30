@@ -296,7 +296,8 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
     const pdtaChunk = writeRIFFChunkParts(
         "pdta",
         chunks.map(c => c.pdta),
-        true
+        true,
+        options?.enable64Bit
     );
     const maxIndex = Math.max(
         ...chunks.map(c => c.highestIndex)
@@ -317,20 +318,30 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
             consoleColors.value
         );
         // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
-        const xpdtaChunk = writeRIFFChunkParts("xdta", chunks.map(c => c.xdta), true);
+        const xpdtaChunk = writeRIFFChunkParts("xdta", chunks.map(c => c.xdta), true, options?.enable64Bit);
         infoArrays.push(xpdtaChunk);
     }
     
-    const infoChunk = writeRIFFChunkParts("INFO", infoArrays, true);
+    const infoChunk = writeRIFFChunkParts("INFO", infoArrays, true, options?.enable64Bit);
     SpessaSynthInfo(
         "%cWriting the output file...",
         consoleColors.info
     );
     // finally, combine everything
-    const main = writeRIFFChunkParts(
-        "RIFF",
-        [getStringBytes("sfbk"), infoChunk, sdtaChunk, pdtaChunk]
-    );
+    let main; 
+    
+    if (options?.enable64Bit)
+    {
+        main = writeRIFFChunkParts(
+            "RIFF",
+            [getStringBytes("sfen"), infoChunk, sdtaChunk, pdtaChunk, options?.enable64Bit]
+        );
+    } else {
+        main = writeRIFFChunkParts(
+            "RIFF",
+            [getStringBytes("sfbk"), infoChunk, sdtaChunk, pdtaChunk, options?.enable64Bit]
+        );
+    }
     SpessaSynthInfo(
         `%cSaved succesfully! Final file size: %c${main.length}`,
         consoleColors.info,
