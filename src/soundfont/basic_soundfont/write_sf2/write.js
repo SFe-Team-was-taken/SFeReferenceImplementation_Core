@@ -58,7 +58,7 @@ const DEFAULT_WRITE_OPTIONS = {
     writeDefaultModulators: true,
     writeExtendedLimits: true,
     decompress: false,
-    bankVersion: "sfe-4.0",
+    bankVersion: "soundfont2",
     enable64Bit: false
 };
 
@@ -334,12 +334,16 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
     {
         main = writeRIFFChunkParts(
             "RIFF",
-            [getStringBytes("sfen"), infoChunk, sdtaChunk, pdtaChunk, options?.enable64Bit]
+            [getStringBytes("sfen"), infoChunk, sdtaChunk, pdtaChunk],
+            false,
+            options?.enable64Bit
         );
     } else {
         main = writeRIFFChunkParts(
             "RIFF",
-            [getStringBytes("sfbk"), infoChunk, sdtaChunk, pdtaChunk, options?.enable64Bit]
+            [getStringBytes("sfen"), infoChunk, sdtaChunk, pdtaChunk],
+            false,
+            options?.enable64Bit
         );
     }
     SpessaSynthInfo(

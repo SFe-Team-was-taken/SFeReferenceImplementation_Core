@@ -13,10 +13,24 @@ export const sampleTypes = {
     rightSample: 2,
     leftSample: 4,
     linkedSample: 8,
-    romMonoSample: 32769,
-    romRightSample: 32770,
-    romLeftSample: 32772,
-    romLinkedSample: 32776
+    vorbisMonoSample: 17,       // SFe Compression and Werner SF3
+    flacMonoSample: 49,         // SFe Compression
+    opusMonoSample: 81,         // SFe Compression
+    wavMonoSample: 113,         // SFe Compression
+    wavRightSample: 114,        // SFe Compression
+    wavLeftSample: 116,         // SFe Compression
+    wavLinkedSample: 120,       // SFe Compression
+    romMonoSample: 32769,       // Not yet supported
+    romRightSample: 32770,      // Not yet supported
+    romLeftSample: 32772,       // Not yet supported
+    romLinkedSample: 32776,     // Not yet supported
+    romVorbisMonoSample: 32785, // SFe Compression and Werner SF3
+    romFlacMonoSample: 32817,   // SFe Compression
+    romOpusMonoSample: 32849,   // SFe Compression
+    romWavMonoSample: 32881,    // SFe Compression
+    romWavRightSample: 32882,   // SFe Compression
+    romWavLeftSample: 32884,    // SFe Compression
+    romWavLinkedSample: 32888   // SFe Compression
 };
 
 
@@ -385,6 +399,32 @@ export class BasicSample
         throw new Error("Sample data is undefined for a BasicSample instance.");
     }
     
+    /**
+     * Encodes s16le sample
+     * @return {IndexedByteArray}
+     */
+    encodeS16LE()
+    {
+        const data = this.getAudioData();
+        const data16 = new Int16Array(data.length);
+        const len = data.length;
+        for (let i = 0; i < len; i++)
+        {
+            let sample = data[i] * 32768;
+            // Clamp for safety (do not use Math.max/Math.min here)
+            if (sample > 32767)
+            {
+                sample = 32767;
+            }
+            else if (sample < -32768)
+            {
+                sample = -32768;
+            }
+            data16[i] = sample;
+        }
+        return new IndexedByteArray(data16.buffer);
+    }
+
     // noinspection JSUnusedGlobalSymbols
     /**
      * @param audioData {Float32Array}
