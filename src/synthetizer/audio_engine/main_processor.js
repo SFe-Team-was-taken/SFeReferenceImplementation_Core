@@ -174,6 +174,12 @@ class SpessaSynthProcessor
 {
     
     /**
+     * Manages sound banks.
+     * @type {SoundFontManager}
+     */
+    soundfontManager = new SoundFontManager(this.updatePresetList.bind(this));
+    
+    /**
      * Cached voices for all presets for this synthesizer.
      * Nesting goes like this:
      * this.cachedVoices[bankNumberMSB][bankNumberLSB][programNumber][midiNote][velocity] = a list of voices for that.
@@ -210,13 +216,6 @@ class SpessaSynthProcessor
      * @type {MTSProgramTuning[]}
      */
     tunings = [];
-    
-    
-    /**
-     * Bank offset for things like embedded RMIDIS. Added for every program change
-     * @type {number}
-     */
-    soundfontBankOffset = 0;
     
     /**
      * The volume gain, set by user
@@ -346,6 +345,7 @@ class SpessaSynthProcessor
      */
     effectsEnabled;
     
+    
     /**
      * for applying the snapshot after an override sound bank too
      * @type {SynthesizerSnapshot}
@@ -408,11 +408,6 @@ class SpessaSynthProcessor
         {
             this.tunings.push([]);
         }
-        
-        /**
-         * @type {SoundFontManager}
-         */
-        this.soundfontManager = new SoundFontManager(this.updatePresetList.bind(this));
         
         for (let i = 0; i < this.midiOutputsCount; i++)
         {
