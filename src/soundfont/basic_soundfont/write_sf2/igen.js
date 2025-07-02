@@ -81,8 +81,8 @@ export function getIGEN(enable64Bit = false)
     const xigenData = new IndexedByteArray(GEN_BYTE_SIZE);
     writeDword(xigenData, 0);
     
-    const igen = writeRIFFChunkRaw("igen", igenData, enable64Bit);
-    const xigen = writeRIFFChunkRaw("igen", xigenData, enable64Bit);
+    const igen = writeRIFFChunkRaw("igen", igenData, false, false, enable64Bit);
+    const xigen = writeRIFFChunkRaw("igen", xigenData, false, false, enable64Bit);
     return {
         pdta: igen,
         xdta: xigen,

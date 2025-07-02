@@ -98,9 +98,10 @@ export function readRIFFChunk(dataArray, readData = true, forceShift = false, ri
  * @param addZeroByte {boolean} add a zero byte into the chunk size
  * @param isList {boolean} adds "LIST" as the chunk type and writes the actual type at the start of the data
  * @param rifs {boolean} whether the chunk is 64-bit (RIFF-like simple 64-bit)
+ * @param includePadByte {boolean} include the pad byte in the size in header 
  * @returns {IndexedByteArray}
  */
-export function writeRIFFChunkRaw(header, data, addZeroByte = false, isList = false, rifs = false)
+export function writeRIFFChunkRaw(header, data, addZeroByte = false, isList = false, rifs = false, includePadByte = false)
 {
     let dataStartOffset;
 
@@ -127,7 +128,10 @@ export function writeRIFFChunkRaw(header, data, addZeroByte = false, isList = fa
     let finalSize = dataStartOffset + dataLength;
     if (finalSize % 2 !== 0)
     {
-        // pad byte does not get included in the size
+        if (includePadByte)
+        {
+            writtenSize++;
+        } 
         finalSize++;
     }
     

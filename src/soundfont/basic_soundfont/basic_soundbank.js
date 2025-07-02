@@ -732,6 +732,7 @@ class BasicSoundBank
         delete this.instruments;
         delete this.samples;
         delete this.soundFontInfo;
+        delete this.sfeInfo;
     }
 }
 

@@ -47,8 +47,8 @@ export function getPBAG(enable64Bit = false)
     writeWord(pbagData, modulatorIndex);
     writeWord(xpbagData, generatorIndex);
     writeWord(xpbagData, modulatorIndex);
-    const pbag = writeRIFFChunkRaw("pbag", pbagData, enable64Bit);
-    const xbag = writeRIFFChunkRaw("pbag", xpbagData, enable64Bit);
+    const pbag = writeRIFFChunkRaw("pbag", pbagData, false, false, enable64Bit);
+    const xbag = writeRIFFChunkRaw("pbag", xpbagData, false, false, enable64Bit);
     return {
         pdta: pbag,
         xdta: xbag,

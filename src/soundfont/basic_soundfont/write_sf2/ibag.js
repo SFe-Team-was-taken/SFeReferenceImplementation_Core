@@ -50,8 +50,8 @@ export function getIBAG(enable64Bit = false)
     writeWord(ibagData, modulatorIndex & 0xFFFF);
     writeWord(xibagData, generatorIndex >> 16);
     writeWord(xibagData, modulatorIndex >> 16);
-    const ibag = writeRIFFChunkRaw("ibag", ibagData, enable64Bit);
-    const xibag = writeRIFFChunkRaw("ibag", xibagData, enable64Bit);
+    const ibag = writeRIFFChunkRaw("ibag", ibagData, false, false, enable64Bit);
+    const xibag = writeRIFFChunkRaw("ibag", xibagData, false, false, enable64Bit);
     return {
         pdta: ibag,
         xdta: xibag,

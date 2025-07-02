@@ -52,8 +52,8 @@ export function getPMOD(enable64Bit = false)
     const xpmodData = new IndexedByteArray(MOD_BYTE_SIZE);
     writeLittleEndian(xpmodData, 0, MOD_BYTE_SIZE);
     
-    const pmod = writeRIFFChunkRaw("pmod", pmodData, enable64Bit);
-    const xpmod = writeRIFFChunkRaw("pmod", xpmodData, enable64Bit);
+    const pmod = writeRIFFChunkRaw("pmod", pmodData, false, false, enable64Bit);
+    const xpmod = writeRIFFChunkRaw("pmod", xpmodData, false, false, enable64Bit);
     return {
         pdta: pmod,
         xdta: xpmod,

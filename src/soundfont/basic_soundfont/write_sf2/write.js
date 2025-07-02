@@ -12,6 +12,9 @@ import { getPGEN } from "./pgen.js";
 import { getPMOD } from "./pmod.js";
 import { getPBAG } from "./pbag.js";
 import { getPHDR } from "./phdr.js";
+import { getSFty } from "./sfty.js";
+import { getSFvx } from "./sfvx.js";
+import { getFlag } from "./flag.js";
 import { writeLittleEndian, writeWord } from "../../../utils/byte_functions/little_endian.js";
 import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../../utils/loggin.js";
 import { MOD_BYTE_SIZE } from "../modulator.js";
@@ -86,8 +89,22 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
     switch(options?.bankVersion)
     {
         case ("soundfont2"):
+            this.soundFontInfo["ifil.wMajor"] = 2;
+            this.soundFontInfo["ifil.wMinor"] = 1;
             break;
         case ("sfe-4.0"):
+            if (options?.enable64Bit)
+            {
+                this.soundFontInfo["ifil.wMajor"] = 4;
+                this.soundFontInfo["ifil.wMinor"] = 0;
+                this.soundFontInfo["isng"] = "SFe 4";
+            }
+            else
+            {
+                this.soundFontInfo["ifil.wMajor"] = 2;
+                this.soundFontInfo["ifil.wMinor"] = 1024;
+                this.soundFontInfo["isng"] = "SFe 4";
+            }
             break;
         default:
             throw new Error(`Invalid bank version: "${options?.bankVersion}"`);
@@ -152,7 +169,6 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
     
     for (const [type, data] of Object.entries(this.soundFontInfo))
     {
-        console.log(type);
         if (type === "ifil" || type === "iver")
         {
             const major = parseInt(data.split(".")[0]);
@@ -190,12 +206,10 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
         else if (type === "ifil.wMajor" || type === "ifil.wMinor" || type === "iver.wMajor" || type === "iver.wMinor")
         {
             // These are SpessaSynth internal values and must not be written
-            console.log(`Ignoring property: ${type}`);
         }
         else if (type === "ICRD.year" || type === "ICRD.month" || type === "ICRD.day" || type === "ICRD.hour" || type === "ICRD.minute" || type === "ICRD.second")
         {
             // These are SpessaSynth internal values and must not be written
-            console.log(`Ignoring property: ${type}`);
         }
         else
         {
@@ -343,6 +357,43 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
         infoArrays.push(xpdtaChunk);
     }
     
+    // Write ISFe-list chunk (SFe only)
+    if (options?.bankVersion == "sfe-4.0")
+    {
+        SpessaSynthInfo(
+            "%cWriting ISFe...",
+            consoleColors.info
+        )
+
+        const sftyChunk = getSFty.call(
+            this,
+            options?.enable64Bit
+        );
+
+        const sfvxChunk = getSFvx.call(
+            this,
+            options?.enable64Bit
+        );
+
+        const flagChunk = getFlag.call(
+            this,
+            options?.enable64Bit
+        );
+
+        /**
+         * @type {ReturnedExtendedSf2Chunks[]}
+         */
+        const isfeSubChunks = [sftyChunk, sfvxChunk, flagChunk];
+
+        const isfeChunk = writeRIFFChunkParts(
+            "ISFe",
+            isfeSubChunks,
+            true,
+            options?.enable64Bit
+        );
+        infoArrays.push(isfeChunk);
+    }
+
     const infoChunk = writeRIFFChunkParts("INFO", infoArrays, true, options?.enable64Bit);
     SpessaSynthInfo(
         "%cWriting the output file...",

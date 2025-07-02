@@ -81,9 +81,9 @@ export function getPGEN(enable64Bit = false)
     const xpgenData = new IndexedByteArray(GEN_BYTE_SIZE);
     writeDword(xpgenData, 0);
     
-    const pgen = writeRIFFChunkRaw("pgen", pgenData, enable64Bit);
+    const pgen = writeRIFFChunkRaw("pgen", pgenData, false, false, enable64Bit);
     
-    const xpgen = writeRIFFChunkRaw("pgen", xpgenData, enable64Bit);
+    const xpgen = writeRIFFChunkRaw("pgen", xpgenData, false, false, enable64Bit);
     return {
         pdta: pgen,
         xdta: xpgen,

@@ -91,8 +91,8 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
     // write EOS and zero everything else
     writeStringAsBytes(shdrData, "EOS", sampleLength);
     writeStringAsBytes(xshdrData, "EOS", sampleLength);
-    const shdr = writeRIFFChunkRaw("shdr", shdrData, enable64Bit);
-    const xshdr = writeRIFFChunkRaw("shdr", xshdrData, enable64Bit);
+    const shdr = writeRIFFChunkRaw("shdr", shdrData, false, false, enable64Bit);
+    const xshdr = writeRIFFChunkRaw("shdr", xshdrData, false, false, enable64Bit);
     return {
         pdta: shdr,
         xdta: xshdr,

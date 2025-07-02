@@ -52,8 +52,8 @@ export function getIMOD(enable64Bit = false)
     const ximodData = new IndexedByteArray(MOD_BYTE_SIZE);
     writeLittleEndian(ximodData, 0, MOD_BYTE_SIZE);
     
-    const imod = writeRIFFChunkRaw("imod", imodData, enable64Bit);
-    const ximod = writeRIFFChunkRaw("imod", ximodData, enable64Bit);
+    const imod = writeRIFFChunkRaw("imod", imodData, false, false, enable64Bit);
+    const ximod = writeRIFFChunkRaw("imod", ximodData, false, false, enable64Bit);
     return {
         pdta: imod,
         xdta: ximod,

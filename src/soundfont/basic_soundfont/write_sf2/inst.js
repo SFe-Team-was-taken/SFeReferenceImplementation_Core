@@ -31,8 +31,8 @@ export function getINST(enable64Bit = false)
     writeWord(instData, instrumentStart & 0xFFFF);
     writeWord(xinstData, instrumentStart >> 16);
     
-    const inst = writeRIFFChunkRaw("inst", instData, enable64Bit);
-    const xinst = writeRIFFChunkRaw("inst", xinstData, enable64Bit);
+    const inst = writeRIFFChunkRaw("inst", instData, false, false, enable64Bit);
+    const xinst = writeRIFFChunkRaw("inst", xinstData, false, false, enable64Bit);
     
     return {
         pdta: inst,
