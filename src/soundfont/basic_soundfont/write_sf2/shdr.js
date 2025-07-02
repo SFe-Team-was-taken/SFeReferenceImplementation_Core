@@ -1,6 +1,6 @@
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
-import { writeDword, writeWord } from "../../../utils/byte_functions/little_endian.js";
+import { writeDword, writeWord, lower32, upper32 } from "../../../utils/byte_functions/little_endian.js";
 import { writeRIFFChunkRaw } from "../riff_chunk.js";
 import { SF3_BIT_FLIT } from "../../read_sf2/samples.js";
 
@@ -27,8 +27,8 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
         const dwStart = smplStartOffsets[index];
         if (enable64Bit)
         {
-            writeDword(shdrData, Math.max(0, dwStart) & 0xFFFFFFFF);
-            writeDword(xshdrData, Math.max(0, dwStart) >> 32);
+            writeDword(shdrData, lower32(Math.max(0, dwStart)));
+            writeDword(xshdrData, upper32(Math.max(0, dwStart)));
         } else {
             writeDword(shdrData, dwStart);
         }
@@ -37,8 +37,8 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
         const dwEnd = smplEndOffsets[index];
         if (enable64Bit)
         {
-            writeDword(shdrData, Math.max(0, dwEnd) & 0xFFFFFFFF);
-            writeDword(xshdrData, Math.max(0, dwEnd) >> 32);
+            writeDword(shdrData, lower32(Math.max(0, dwEnd)));
+            writeDword(xshdrData, upper32(Math.max(0, dwEnd)));
         } else {
             writeDword(shdrData, dwEnd);
         }
@@ -54,15 +54,15 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
         }
         if (enable64Bit)
         {
-            writeDword(shdrData, Math.max(0, loopStart) & 0xFFFFFFFF);
-            writeDword(xshdrData, Math.max(0, loopStart) >> 32);
+            writeDword(shdrData, lower32(Math.max(0, loopStart)));
+            writeDword(xshdrData, upper32(Math.max(0, loopStart)));
         } else {
             writeDword(shdrData, loopStart);
         }
         if (enable64Bit)
         {
-            writeDword(shdrData, Math.max(0, loopEnd) & 0xFFFFFFFF);
-            writeDword(xshdrData, Math.max(0, loopEnd) >> 32);
+            writeDword(shdrData, lower32(Math.max(0, loopEnd)));
+            writeDword(xshdrData, upper32(Math.max(0, loopEnd)));
         } else {
             writeDword(shdrData, loopEnd);
         }

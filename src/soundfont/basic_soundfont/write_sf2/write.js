@@ -237,7 +237,8 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
         options.compress,
         options.decompress,
         options?.compressionFunction,
-        options?.progressFunction
+        options?.progressFunction,
+        options?.enable64Bit
     );
     
     SpessaSynthInfo(
@@ -405,7 +406,7 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
     if (options?.enable64Bit)
     {
         main = writeRIFFChunkParts(
-            "RIFF",
+            "RIFS",
             [getStringBytes("sfen"), infoChunk, sdtaChunk, pdtaChunk],
             false,
             options?.enable64Bit

@@ -806,10 +806,10 @@ export class SoundFont2 extends BasicSoundBank
                     s.linkedSampleIndex |= xSamples[i].linkedSampleIndex << 16;
                     if (is64Bit)
                     {
-                        s.sampleStartIndex |= xSamples[i].sampleStartIndex << 32;
-                        s.sampleEndIndex |= xSamples[i].sampleEndIndex << 32;
-                        s.sampleLoopStartIndex |= xSamples[i].sampleLoopStartIndex << 32;
-                        s.sampleLoopEndIndex |= xSamples[i].sampleLoopEndIndex << 32;
+                        s.sampleStartIndex += xSamples[i].sampleStartIndex * 4294967296;
+                        s.sampleEndIndex += xSamples[i].sampleEndIndex * 4294967296;
+                        s.sampleLoopStartIndex += xSamples[i].sampleLoopStartIndex * 4294967296;
+                        s.sampleLoopEndIndex += xSamples[i].sampleLoopEndIndex * 4294967296;
                     }
                 });
             }

@@ -1,6 +1,6 @@
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeStringAsBytes } from "../../../utils/byte_functions/string.js";
-import { writeLittleEndian } from "../../../utils/byte_functions/little_endian.js";
+import { writeLittleEndian, upper32, lower32 } from "../../../utils/byte_functions/little_endian.js";
 import { SpessaSynthInfo } from "../../../utils/loggin.js";
 import { consoleColors } from "../../../utils/other.js";
 
@@ -113,7 +113,8 @@ export async function getSDTA(smplStartOffsets,
     // "sdta" + full smpl length
     if (enable64Bit)
     {
-        writeLittleEndian(sdta, smplChunkSize + SDTA_TO_DATA_OFFSET_SFE64 - 12, 8);
+        writeLittleEndian(sdta, lower32(smplChunkSize + SDTA_TO_DATA_OFFSET_SFE64 - 12), 4);
+        writeLittleEndian(sdta, upper32(smplChunkSize + SDTA_TO_DATA_OFFSET_SFE64 - 12), 4);
     } else {
         writeLittleEndian(sdta, smplChunkSize + SDTA_TO_DATA_OFFSET - 8, 4);
     }
@@ -121,7 +122,8 @@ export async function getSDTA(smplStartOffsets,
     writeStringAsBytes(sdta, "smpl");
     if (enable64Bit)
     {
-        writeLittleEndian(sdta, smplChunkSize, 8);
+        writeLittleEndian(sdta, lower32(smplChunkSize), 4);
+        writeLittleEndian(sdta, upper32(smplChunkSize), 4);
     } else {
         writeLittleEndian(sdta, smplChunkSize, 4);
     }

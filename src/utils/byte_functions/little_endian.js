@@ -54,7 +54,13 @@ export function writeDword(dataArray, dword)
  */
 export function writeQword(dataArray, qword)
 {
-    writeLittleEndian(dataArray, qword, 8);
+    let lowerDword = lower32(qword);
+    console.log(lowerDword);
+    let upperDword = upper32(qword);
+    console.log(upperDword);
+
+    writeLittleEndian(dataArray, lowerDword, 4);
+    writeLittleEndian(dataArray, upperDword, 4);
 }
 
 /**
@@ -83,4 +89,42 @@ export function signedInt8(byte)
         return byte - 256;
     }
     return byte;
+}
+
+// JavaScript's built-in bitwise functions cannot be used with 64-bit numbers.
+// Attempting to do so will result in truncation to 32-bit numbers and value corruption.
+// 64-bit SFe code sometimes requires splitting 64-bit values into two 32-bit values.
+// These functions implement such functionality.
+
+/**
+ * Obtain the lower 32 bits of a 64-bit integer using brute force
+ * @param {*} qword 64-bit integer
+ */
+
+export function lower32(qword)
+{
+    let subtractValue = 9223372036854775808;
+    let lowerDword = qword;
+    while (subtractValue >= 4294967296)
+    {
+        if (lowerDword >= subtractValue)
+        {
+            lowerDword -= subtractValue;
+        }
+        subtractValue /= 2;
+    }
+    return lowerDword;
+}
+
+/**
+ * Obtain the upper 32 bits of a 64-bit integer using brute force
+ * @param {*} qword 64-bit integer
+ */
+
+export function upper32(qword)
+{
+    let upperDword = qword;
+    upperDword -= lower32(qword);
+    upperDword /= 4294967296;
+    return upperDword;
 }
