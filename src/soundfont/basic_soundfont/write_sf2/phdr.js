@@ -19,11 +19,12 @@ export function getPHDR(bankVersion, enable64Bit = false)
     let presetStart = 0;
     for (const preset of this.presets)
     {
+        console.log(preset);
         writeStringAsBytes(phdrData, preset.presetName.substring(0, 20), 20);
         writeStringAsBytes(xphdrData, preset.presetName.substring(20), 20);
         
         writeWord(phdrData, preset.program);
-        if (bankVersion = "soundfont2") {
+        if (bankVersion === "soundfont2") {
             writeWord(phdrData, preset.bank); // Don't include LSB on SF2, well-formed SFe banks will be ordered in MSB/LSB order.
         } else {
             phdrData[phdrData.currentIndex++] = preset.bank;

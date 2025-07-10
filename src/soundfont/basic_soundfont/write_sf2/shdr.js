@@ -17,6 +17,8 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
     const shdrData = new IndexedByteArray(shdrSize);
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const xshdrData = new IndexedByteArray(shdrSize);
+    console.log(`smplStartOffsets: ${smplStartOffsets}`);
+    console.log(`smplEndOffsets: ${smplEndOffsets}`);
     let maxSampleLink = 0;
     this.samples.forEach((sample, index) =>
     {

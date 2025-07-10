@@ -346,13 +346,14 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
         || this.samples.some(s => s.sampleName.length > 20)
     );
     
-    if (writeXdta)
+    if (writeXdta || options.enable64Bit)
     {
         SpessaSynthInfo(
             `%cWriting the xdta chunk! Max index: %c${maxIndex}`,
             consoleColors.info,
             consoleColors.value
         );
+        
         // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
         const xpdtaChunk = writeRIFFChunkParts("xdta", chunks.map(c => c.xdta), true, options?.enable64Bit);
         infoArrays.push(xpdtaChunk);

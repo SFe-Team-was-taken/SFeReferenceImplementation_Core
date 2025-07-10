@@ -55,9 +55,9 @@ export function writeDword(dataArray, dword)
 export function writeQword(dataArray, qword)
 {
     let lowerDword = lower32(qword);
-    console.log(lowerDword);
+    // console.log(lowerDword);
     let upperDword = upper32(qword);
-    console.log(upperDword);
+    // console.log(upperDword);
 
     writeLittleEndian(dataArray, lowerDword, 4);
     writeLittleEndian(dataArray, upperDword, 4);

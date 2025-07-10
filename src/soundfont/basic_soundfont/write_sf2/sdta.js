@@ -102,6 +102,9 @@ export async function getSDTA(smplStartOffsets,
     
     if (enable64Bit)
     {
+        console.log(smplChunkSize);
+        let test3 = new IndexedByteArray(10000000000);
+        console.log(test3);
         sdta = new IndexedByteArray(smplChunkSize + SDTA_TO_DATA_OFFSET_SFE64);
     } else {
         sdta = new IndexedByteArray(smplChunkSize + SDTA_TO_DATA_OFFSET);

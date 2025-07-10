@@ -53,7 +53,7 @@ export class SoundFontManager
                 let presetString;
                 if (p.bank > 127 && bank > 127) // Prevent bank offset from activating drums! 
                 {
-                    presetString = `${bank - 128}-${bankLSB}-${p.program}-perc`;
+                    presetString = `${bank}-${bankLSB}-${p.program}`;
                 } else {
                     presetString = `${bank}-${bankLSB}-${p.program}`;
                 }
