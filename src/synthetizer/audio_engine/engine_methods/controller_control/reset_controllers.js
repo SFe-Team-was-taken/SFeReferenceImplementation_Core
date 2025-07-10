@@ -71,11 +71,13 @@ export function resetAllControllers(log = true)
             continue;
         }
         const presetBank = ch.preset?.bank;
+        const presetBankLSB = ch.preset?.bankLSB;
         // call program change
         this.callEvent("programchange", {
             channel: channelNumber,
             program: ch.preset?.program,
-            bank: presetBank
+            bank: presetBank,
+            bankLSB: presetBankLSB
         });
         
         for (let ccNum = 0; ccNum < 128; ccNum++)

@@ -37,6 +37,15 @@ export const sampleTypes = {
     romWavLinkedSample: 32888   // SFe Compression
 };
 
+/**
+ * @enum {containerTypes}
+ */
+export const containerTypes = {
+    ogg: 0,
+    flac: 1,
+    opus: 2,
+    wav: 3
+}
 
 /**
  * @typedef {function} SampleEncodingFunction

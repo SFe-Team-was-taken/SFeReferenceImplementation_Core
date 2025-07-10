@@ -21,7 +21,8 @@ export function writeWavesample(
     attenuationCentibels,
     loopStart,
     loopEnd,
-    loopingMode)
+    loopingMode,
+    header = "wsmp")
 {
     let loopCount = loopingMode === 0 ? 0 : 1;
     const wsmpData = new IndexedByteArray(WSMP_SIZE + loopCount * 16);
@@ -72,7 +73,7 @@ export function writeWavesample(
         writeDword(wsmpData, loopSize);
     }
     return writeRIFFChunkRaw(
-        "wsmp",
+        header,
         wsmpData
     );
 }
