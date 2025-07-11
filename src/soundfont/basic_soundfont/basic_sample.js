@@ -52,7 +52,7 @@ export const containerTypes = {
  * @async
  * @param audioData {Float32Array}
  * @param sampleRate {number}
- * @returns {Uint8Array}
+ * @returns {Promise<Uint8Array>}
  */
 
 export class BasicSample
