@@ -144,6 +144,12 @@ class Voice
     modulators = [];
     
     /**
+     * Resonance offset, it is affected by the default resonant modulator
+     * @type {number}
+     */
+    resonanceOffset = 0;
+    
+    /**
      * The generators in real-time, affected by modulators.
      * This is used during rendering.
      * @type {Int16Array}
@@ -290,7 +296,6 @@ class Voice
         this.modulatedGenerators = new Int16Array(generators);
         this.modulators = modulators;
         this.filter = new LowpassFilter(sampleRate);
-        
         this.velocity = velocity;
         this.midiNote = midiNote;
         this.startTime = currentTime;
@@ -453,8 +458,6 @@ export function getVoicesForPreset(preset, bank, bankLSB, program, midiNote, vel
             //     MidiNote: midiNote,
             //     AudioSample: audioSample
             // }]);
-            
-            
             voices.push(
                 new Voice(
                     this.sampleRate,
