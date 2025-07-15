@@ -41,7 +41,7 @@ class BasicMIDI extends MIDISequenceData
     isDLSRMIDI = false;
     
     /**
-     * Copies a MIDI
+     * Copies a MIDI (tracks are shallowly copied!)
      * @param mid {BasicMIDI}
      * @returns {BasicMIDI}
      */
@@ -51,9 +51,27 @@ class BasicMIDI extends MIDISequenceData
         m._copyFromSequence(mid);
         
         m.isDLSRMIDI = mid.isDLSRMIDI;
-        m.embeddedSoundFont = mid.embeddedSoundFont ? mid.embeddedSoundFont.slice(0) : undefined; // Deep copy
+        m.embeddedSoundFont = mid?.embeddedSoundFont ? mid.embeddedSoundFont : undefined; // Shallow copy
         m.tracks = mid.tracks.map(track => [...track]); // Shallow copy of each track array
-        
+        return m;
+    }
+    
+    /**
+     * Copies a MIDI with deep copy
+     * @param mid {BasicMIDI}
+     * @returns {BasicMIDI}
+     */
+    static copyFromDeep(mid)
+    {
+        const m = new BasicMIDI();
+        m._copyFromSequence(mid);
+        m.isDLSRMIDI = mid.isDLSRMIDI;
+        m.embeddedSoundFont = mid.embeddedSoundFont ? mid.embeddedSoundFont.slice(0) : undefined; // Deep copy
+        m.tracks = mid.tracks.map(track => track.map(event => new MIDIMessage(
+            event.ticks,
+            event.messageStatusByte,
+            event.messageData
+        ))); // Deep copy
         return m;
     }
     
@@ -217,7 +235,6 @@ class BasicMIDI extends MIDISequenceData
                             copyrightComponents.push(readBytesAsString(
                                 e.messageData,
                                 e.messageData.length,
-                                undefined,
                                 false
                             ));
                             e.messageData.currentIndex = 0;
@@ -466,7 +483,7 @@ class BasicMIDI extends MIDISequenceData
                     {
                         this.rawMidiName = name.messageData;
                         name.messageData.currentIndex = 0;
-                        this.midiName = readBytesAsString(name.messageData, name.messageData.length, undefined, false);
+                        this.midiName = readBytesAsString(name.messageData, name.messageData.length, false);
                     }
                 }
             }
@@ -478,7 +495,7 @@ class BasicMIDI extends MIDISequenceData
                 {
                     this.rawMidiName = name.messageData;
                     name.messageData.currentIndex = 0;
-                    this.midiName = readBytesAsString(name.messageData, name.messageData.length, undefined, false);
+                    this.midiName = readBytesAsString(name.messageData, name.messageData.length, false);
                 }
             }
         }
