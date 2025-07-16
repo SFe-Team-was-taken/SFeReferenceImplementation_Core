@@ -16,12 +16,63 @@ export function getPHDR(bankVersion, enable64Bit = false)
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const xphdrData = new IndexedByteArray(phdrSize);
     // the preset start is adjusted in pbag, this is only for the terminal preset index
+    
+    const encoder = new TextEncoder();
+
     let presetStart = 0;
     for (const preset of this.presets)
     {
         console.log(preset);
-        writeStringAsBytes(phdrData, preset.presetName.substring(0, 20), 20);
-        writeStringAsBytes(xphdrData, preset.presetName.substring(20), 20);
+        const encodedText = encoder.encode(preset.presetName);
+
+        if (encodedText.length < 20)
+        {
+            for (let i = 0; i < encodedText.length; i++)
+            {
+                phdrData[phdrData.currentIndex++] = encodedText[i];
+            }
+            for (let i = encodedText.length; i < 20; i++)
+            {
+                phdrData[phdrData.currentIndex++] = 0;
+            }
+            for (let i = 0; i < 20; i++)
+            {
+                xphdrData[xphdrData.currentIndex++] = 0;
+            }
+        } else if (encodedText.length == 20)
+        {
+            for (let i = 0; i < 20; i++)
+            {
+                phdrData[phdrData.currentIndex++] = encodedText[i];
+            }
+            for (let i = 0; i < 20; i++)
+            {
+                xphdrData[xphdrData.currentIndex++] = 0;
+            }
+        } else if (encodedText.length < 40)
+        {
+            for (let i = 0; i < 20; i++)
+            {
+                phdrData[phdrData.currentIndex++] = encodedText[i];
+            }
+            for (let i = 20; i < encodedText.length; i++)
+            {
+                xphdrData[xphdrData.currentIndex++] = encodedText[i];
+            }
+            for (let i = encodedText.length; i < 40; i++)
+            {
+                xphdrData[xphdrData.currentIndex++] = 0;
+            }
+        } else {
+            for (let i = 0; i < 20; i++)
+            {
+                phdrData[phdrData.currentIndex++] = encodedText[i];
+            }
+            for (let i = 20; i < 40; i++)
+            {
+                xphdrData[xphdrData.currentIndex++] = encodedText[i];
+            }
+        }
         
         writeWord(phdrData, preset.program);
         if (bankVersion === "soundfont2") {

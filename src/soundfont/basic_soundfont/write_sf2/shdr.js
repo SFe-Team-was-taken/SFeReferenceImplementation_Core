@@ -17,14 +17,65 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
     const shdrData = new IndexedByteArray(shdrSize);
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const xshdrData = new IndexedByteArray(shdrSize);
-    console.log(`smplStartOffsets: ${smplStartOffsets}`);
-    console.log(`smplEndOffsets: ${smplEndOffsets}`);
+    
+    const encoder = new TextEncoder();
+
     let maxSampleLink = 0;
     this.samples.forEach((sample, index) =>
     {
         // sample name
-        writeStringAsBytes(shdrData, sample.sampleName.substring(0, 20), 20);
-        writeStringAsBytes(xshdrData, sample.sampleName.substring(20), 20);
+
+        const encodedText = encoder.encode(sample.sampleName);
+
+        if (encodedText.length < 20)
+        {
+            for (let i = 0; i < encodedText.length; i++)
+            {
+                shdrData[shdrData.currentIndex++] = encodedText[i];
+            }
+            for (let i = encodedText.length; i < 20; i++)
+            {
+                shdrData[shdrData.currentIndex++] = 0;
+            }
+            for (let i = 0; i < 20; i++)
+            {
+                xshdrData[xshdrData.currentIndex++] = 0;
+            }
+        } else if (encodedText.length == 20)
+        {
+            for (let i = 0; i < 20; i++)
+            {
+                shdrData[shdrData.currentIndex++] = encodedText[i];
+            }
+            for (let i = 0; i < 20; i++)
+            {
+                xshdrData[xshdrData.currentIndex++] = 0;
+            }
+        } else if (encodedText.length < 40)
+        {
+            for (let i = 0; i < 20; i++)
+            {
+                shdrData[shdrData.currentIndex++] = encodedText[i];
+            }
+            for (let i = 20; i < encodedText.length; i++)
+            {
+                xshdrData[xshdrData.currentIndex++] = encodedText[i];
+            }
+            for (let i = encodedText.length; i < 40; i++)
+            {
+                xshdrData[xshdrData.currentIndex++] = 0;
+            }
+        } else {
+            for (let i = 0; i < 20; i++)
+            {
+                shdrData[shdrData.currentIndex++] = encodedText[i];
+            }
+            for (let i = 20; i < 40; i++)
+            {
+                xshdrData[xshdrData.currentIndex++] = encodedText[i];
+            }
+        }
+
         // start offset
         const dwStart = smplStartOffsets[index];
         if (enable64Bit)

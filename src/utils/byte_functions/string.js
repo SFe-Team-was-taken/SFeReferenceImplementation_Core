@@ -62,6 +62,42 @@ export function getStringBytes(string, addZero = false, ensureEven = false)
 
 /**
  * @param string {string}
+ * @param addZero {boolean} adds a zero terminator at the end
+ * @param ensureEven {boolean} ensures even byte count
+ * @returns {IndexedByteArray}
+ */
+export function getStringBytesUtf8(string, addZero = false, ensureEven = false)
+{
+    const encoder = new TextEncoder();
+    const encodedText = encoder.encode(string)
+    let len = encodedText.length;
+    let pad = len;
+    if (addZero)
+    {
+        pad++;
+    }
+    if (ensureEven && len % 2 !== 0)
+    {
+        pad++;
+    }
+    const arr = new IndexedByteArray(len);
+    for (let i = 0; i < len; i++) 
+    {
+        arr[arr.currentIndex++] = encodedText[i];
+    }
+    if (pad > len) 
+    {
+        for (let i = len; i < pad; i++)
+        {
+            arr[arr.currentIndex++] = 0;
+        }
+    }
+    return arr;
+}
+
+
+/**
+ * @param string {string}
  * @param outArray {IndexedByteArray}
  * @param padLength {number}
  * @returns {IndexedByteArray} modified IN PLACE

@@ -17,10 +17,62 @@ export function getINST(enable64Bit = false)
     const xinstData = new IndexedByteArray(instSize);
     // the instrument start index is adjusted in ibag, write it here
     let instrumentStart = 0;
+
+    const encoder = new TextEncoder();
+
     for (const inst of this.instruments)
     {
-        writeStringAsBytes(instData, inst.instrumentName.substring(0, 20), 20);
-        writeStringAsBytes(xinstData, inst.instrumentName.substring(20), 20);
+        const encodedText = encoder.encode(inst.instrumentName);
+
+        if (encodedText.length < 20)
+        {
+            for (let i = 0; i < encodedText.length; i++)
+            {
+                instData[instData.currentIndex++] = encodedText[i];
+            }
+            for (let i = encodedText.length; i < 20; i++)
+            {
+                instData[instData.currentIndex++] = 0;
+            }
+            for (let i = 0; i < 20; i++)
+            {
+                xinstData[xinstData.currentIndex++] = 0;
+            }
+        } else if (encodedText.length == 20)
+        {
+            for (let i = 0; i < 20; i++)
+            {
+                instData[instData.currentIndex++] = encodedText[i];
+            }
+            for (let i = 0; i < 20; i++)
+            {
+                xinstData[xinstData.currentIndex++] = 0;
+            }
+        } else if (encodedText.length < 40)
+        {
+            for (let i = 0; i < 20; i++)
+            {
+                instData[instData.currentIndex++] = encodedText[i];
+            }
+            for (let i = 20; i < encodedText.length; i++)
+            {
+                xinstData[xinstData.currentIndex++] = encodedText[i];
+            }
+            for (let i = encodedText.length; i < 40; i++)
+            {
+                xinstData[xinstData.currentIndex++] = 0;
+            }
+        } else {
+            for (let i = 0; i < 20; i++)
+            {
+                instData[instData.currentIndex++] = encodedText[i];
+            }
+            for (let i = 20; i < 40; i++)
+            {
+                xinstData[xinstData.currentIndex++] = encodedText[i];
+            }
+        }
+
         writeWord(instData, instrumentStart & 0xFFFF);
         writeWord(xinstData, instrumentStart >> 16);
         instrumentStart += inst.instrumentZones.length + 1; // global

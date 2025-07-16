@@ -1,6 +1,6 @@
 import { IndexedByteArray } from "../../../utils/indexed_array.js";
 import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../riff_chunk.js";
-import { getStringBytes } from "../../../utils/byte_functions/string.js";
+import { getStringBytes, getStringBytesUtf8 } from "../../../utils/byte_functions/string.js";
 import { consoleColors } from "../../../utils/other.js";
 import { getIGEN } from "./igen.js";
 import { getSDTA } from "./sdta.js";
@@ -215,7 +215,7 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
         {
             infoArrays.push(writeRIFFChunkRaw(
                 type,
-                getStringBytes(data, true, true), // pad with zero and ensure even length
+                getStringBytesUtf8(data, true, true), // pad with zero and ensure even length
                 false,
                 false,
                 options?.enable64Bit
@@ -339,11 +339,13 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
         ...chunks.map(c => c.highestIndex)
     );
     
+    const encoder = new TextEncoder();
+
     const writeXdta = options.writeExtendedLimits && (
         maxIndex > 0xFFFF
-        || this.presets.some(p => p.presetName.length > 20)
-        || this.instruments.some(i => i.instrumentName.length > 20)
-        || this.samples.some(s => s.sampleName.length > 20)
+        || this.presets.some(p => encoder.encode(p.presetName).length > 20)
+        || this.instruments.some(i => encoder.encode(i.instrumentName).length > 20)
+        || this.samples.some(s => encoder.encode(s.sampleName).length > 20)
     );
     
     if (writeXdta || options.enable64Bit)
