@@ -26,56 +26,24 @@ export function getPHDR(bankVersion, enable64Bit = false)
     {
         console.log(preset);
         const encodedText = encoder.encode(preset.presetName);
-        if (encodedText.length < 20)
+        if (encodedText.length <= 20)
         {
-            for (let i = 0; i < encodedText.length; i++)
-            {
-                phdrData[phdrData.currentIndex++] = encodedText[i];
-            }
-            for (let i = encodedText.length; i < 20; i++)
-            {
-                phdrData[phdrData.currentIndex++] = 0;
-            }
-            for (let i = 0; i < 20; i++)
-            {
-                xphdrData[xphdrData.currentIndex++] = 0;
-            }
-        } else if (encodedText.length == 20)
+            phdrData.set(encodedText,phdrData.currentIndex);
+        } 
+        else if (encodedText.length <= 40)
         {
-            for (let i = 0; i < 20; i++)
-            {
-                phdrData[phdrData.currentIndex++] = encodedText[i];
-            }
-            for (let i = 0; i < 20; i++)
-            {
-                xphdrData[xphdrData.currentIndex++] = 0;
-            }
-        } else if (encodedText.length < 40)
-        {
-            for (let i = 0; i < 20; i++)
-            {
-                phdrData[phdrData.currentIndex++] = encodedText[i];
-            }
-            for (let i = 20; i < encodedText.length; i++)
-            {
-                xphdrData[xphdrData.currentIndex++] = encodedText[i];
-            }
-            for (let i = encodedText.length; i < 40; i++)
-            {
-                xphdrData[xphdrData.currentIndex++] = 0;
-            }
+            phdrData.set(encodedText.slice(0,20),phdrData.currentIndex);
+            xphdrData.set(encodedText.slice(20),xphdrData.currentIndex);
             longName = true;
-        } else {
-            for (let i = 0; i < 20; i++)
-            {
-                phdrData[phdrData.currentIndex++] = encodedText[i];
-            }
-            for (let i = 20; i < 40; i++)
-            {
-                xphdrData[xphdrData.currentIndex++] = encodedText[i];
-            }
+        } 
+        else 
+        {
+            phdrData.set(encodedText.slice(0,20),phdrData.currentIndex);
+            xphdrData.set(encodedText.slice(20,40),xphdrData.currentIndex);
             longName = true;
         }
+        phdrData.currentIndex += 20;
+        xphdrData.currentIndex += 20;
         
         writeWord(phdrData, preset.program);
         if (bankVersion === "soundfont2") {

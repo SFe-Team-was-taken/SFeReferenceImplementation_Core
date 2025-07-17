@@ -28,56 +28,24 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
     {
         // sample name
         const encodedText = encoder.encode(sample.sampleName);
-        if (encodedText.length < 20)
+        if (encodedText.length <= 20)
         {
-            for (let i = 0; i < encodedText.length; i++)
-            {
-                shdrData[shdrData.currentIndex++] = encodedText[i];
-            }
-            for (let i = encodedText.length; i < 20; i++)
-            {
-                shdrData[shdrData.currentIndex++] = 0;
-            }
-            for (let i = 0; i < 20; i++)
-            {
-                xshdrData[xshdrData.currentIndex++] = 0;
-            }
-        } else if (encodedText.length == 20)
+            shdrData.set(encodedText,shdrData.currentIndex);
+        } 
+        else if (encodedText.length <= 40)
         {
-            for (let i = 0; i < 20; i++)
-            {
-                shdrData[shdrData.currentIndex++] = encodedText[i];
-            }
-            for (let i = 0; i < 20; i++)
-            {
-                xshdrData[xshdrData.currentIndex++] = 0;
-            }
-        } else if (encodedText.length < 40)
-        {
-            for (let i = 0; i < 20; i++)
-            {
-                shdrData[shdrData.currentIndex++] = encodedText[i];
-            }
-            for (let i = 20; i < encodedText.length; i++)
-            {
-                xshdrData[xshdrData.currentIndex++] = encodedText[i];
-            }
-            for (let i = encodedText.length; i < 40; i++)
-            {
-                xshdrData[xshdrData.currentIndex++] = 0;
-            }
+            shdrData.set(encodedText.slice(0,20),shdrData.currentIndex);
+            xshdrData.set(encodedText.slice(20),xshdrData.currentIndex);
             longName = true;
-        } else {
-            for (let i = 0; i < 20; i++)
-            {
-                shdrData[shdrData.currentIndex++] = encodedText[i];
-            }
-            for (let i = 20; i < 40; i++)
-            {
-                xshdrData[xshdrData.currentIndex++] = encodedText[i];
-            }
+        } 
+        else 
+        {
+            shdrData.set(encodedText.slice(0,20),shdrData.currentIndex);
+            xshdrData.set(encodedText.slice(20,40),xshdrData.currentIndex);
             longName = true;
         }
+        shdrData.currentIndex += 20;
+        xshdrData.currentIndex += 20;
 
         // start offset
         const dwStart = smplStartOffsets[index];

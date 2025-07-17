@@ -25,56 +25,24 @@ export function getINST(enable64Bit = false)
     for (const inst of this.instruments)
     {
         const encodedText = encoder.encode(inst.instrumentName);
-        if (encodedText.length < 20)
+        if (encodedText.length <= 20)
         {
-            for (let i = 0; i < encodedText.length; i++)
-            {
-                instData[instData.currentIndex++] = encodedText[i];
-            }
-            for (let i = encodedText.length; i < 20; i++)
-            {
-                instData[instData.currentIndex++] = 0;
-            }
-            for (let i = 0; i < 20; i++)
-            {
-                xinstData[xinstData.currentIndex++] = 0;
-            }
-        } else if (encodedText.length == 20)
+            instData.set(encodedText,instData.currentIndex);
+        } 
+        else if (encodedText.length <= 40)
         {
-            for (let i = 0; i < 20; i++)
-            {
-                instData[instData.currentIndex++] = encodedText[i];
-            }
-            for (let i = 0; i < 20; i++)
-            {
-                xinstData[xinstData.currentIndex++] = 0;
-            }
-        } else if (encodedText.length < 40)
-        {
-            for (let i = 0; i < 20; i++)
-            {
-                instData[instData.currentIndex++] = encodedText[i];
-            }
-            for (let i = 20; i < encodedText.length; i++)
-            {
-                xinstData[xinstData.currentIndex++] = encodedText[i];
-            }
-            for (let i = encodedText.length; i < 40; i++)
-            {
-                xinstData[xinstData.currentIndex++] = 0;
-            }
+            instData.set(encodedText.slice(0,20),instData.currentIndex);
+            xinstData.set(encodedText.slice(20),xinstData.currentIndex);
             longName = true;
-        } else {
-            for (let i = 0; i < 20; i++)
-            {
-                instData[instData.currentIndex++] = encodedText[i];
-            }
-            for (let i = 20; i < 40; i++)
-            {
-                xinstData[xinstData.currentIndex++] = encodedText[i];
-            }
+        } 
+        else 
+        {
+            instData.set(encodedText.slice(0,20),instData.currentIndex);
+            xinstData.set(encodedText.slice(20,40),xinstData.currentIndex);
             longName = true;
         }
+        instData.currentIndex += 20;
+        xinstData.currentIndex += 20;
 
         writeWord(instData, instrumentStart & 0xFFFF);
         writeWord(xinstData, instrumentStart >> 16);
