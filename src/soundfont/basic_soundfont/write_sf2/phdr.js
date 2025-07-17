@@ -19,12 +19,13 @@ export function getPHDR(bankVersion, enable64Bit = false)
     
     const encoder = new TextEncoder();
 
+    let longName = false;
+
     let presetStart = 0;
     for (const preset of this.presets)
     {
         console.log(preset);
         const encodedText = encoder.encode(preset.presetName);
-
         if (encodedText.length < 20)
         {
             for (let i = 0; i < encodedText.length; i++)
@@ -63,6 +64,7 @@ export function getPHDR(bankVersion, enable64Bit = false)
             {
                 xphdrData[xphdrData.currentIndex++] = 0;
             }
+            longName = true;
         } else {
             for (let i = 0; i < 20; i++)
             {
@@ -72,6 +74,7 @@ export function getPHDR(bankVersion, enable64Bit = false)
             {
                 xphdrData[xphdrData.currentIndex++] = encodedText[i];
             }
+            longName = true;
         }
         
         writeWord(phdrData, preset.program);
@@ -110,10 +113,11 @@ export function getPHDR(bankVersion, enable64Bit = false)
     const phdr = writeRIFFChunkRaw("phdr", phdrData, false, false, enable64Bit);
     
     const xphdr = writeRIFFChunkRaw("phdr", xphdrData, false, false, enable64Bit);
-    
+
     return {
         pdta: phdr,
         xdta: xphdr,
+        xdtaToggle: longName,
         highestIndex: presetStart
     };
 }

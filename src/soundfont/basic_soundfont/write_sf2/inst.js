@@ -20,10 +20,11 @@ export function getINST(enable64Bit = false)
 
     const encoder = new TextEncoder();
 
+        let longName = false;
+
     for (const inst of this.instruments)
     {
         const encodedText = encoder.encode(inst.instrumentName);
-
         if (encodedText.length < 20)
         {
             for (let i = 0; i < encodedText.length; i++)
@@ -62,6 +63,7 @@ export function getINST(enable64Bit = false)
             {
                 xinstData[xinstData.currentIndex++] = 0;
             }
+            longName = true;
         } else {
             for (let i = 0; i < 20; i++)
             {
@@ -71,6 +73,7 @@ export function getINST(enable64Bit = false)
             {
                 xinstData[xinstData.currentIndex++] = encodedText[i];
             }
+            longName = true;
         }
 
         writeWord(instData, instrumentStart & 0xFFFF);
@@ -89,6 +92,7 @@ export function getINST(enable64Bit = false)
     return {
         pdta: inst,
         xdta: xinst,
+        xdtaToggle: longName,
         highestIndex: instrumentStart
     };
 }

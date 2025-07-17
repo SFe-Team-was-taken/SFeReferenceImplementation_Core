@@ -338,14 +338,12 @@ export async function write(options = DEFAULT_WRITE_OPTIONS)
     const maxIndex = Math.max(
         ...chunks.map(c => c.highestIndex)
     );
-    
-    const encoder = new TextEncoder();
 
     const writeXdta = options.writeExtendedLimits && (
         maxIndex > 0xFFFF
-        || this.presets.some(p => encoder.encode(p.presetName).length > 20)
-        || this.instruments.some(i => encoder.encode(i.instrumentName).length > 20)
-        || this.samples.some(s => encoder.encode(s.sampleName).length > 20)
+        || phdrChunk.xdtaToggle
+        || instChunk.xdtaToggle
+        || shdrChunk.xdtaToggle
     );
     
     if (writeXdta || options.enable64Bit)

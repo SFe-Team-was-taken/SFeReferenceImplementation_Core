@@ -21,12 +21,13 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
     const encoder = new TextEncoder();
 
     let maxSampleLink = 0;
+
+    let longName = false;
+
     this.samples.forEach((sample, index) =>
     {
         // sample name
-
         const encodedText = encoder.encode(sample.sampleName);
-
         if (encodedText.length < 20)
         {
             for (let i = 0; i < encodedText.length; i++)
@@ -65,6 +66,7 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
             {
                 xshdrData[xshdrData.currentIndex++] = 0;
             }
+            longName = true;
         } else {
             for (let i = 0; i < 20; i++)
             {
@@ -74,6 +76,7 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
             {
                 xshdrData[xshdrData.currentIndex++] = encodedText[i];
             }
+            longName = true;
         }
 
         // start offset
@@ -149,6 +152,7 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
     return {
         pdta: shdr,
         xdta: xshdr,
+        xdtaToggle: longName,
         highestIndex: maxSampleLink
     };
 }
