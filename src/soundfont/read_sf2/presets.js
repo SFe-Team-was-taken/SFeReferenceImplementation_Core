@@ -1,11 +1,12 @@
 import { RiffChunk } from "../basic_soundfont/riff_chunk.js";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import { readBytesAsString } from "../../utils/byte_functions/string.js";
+import { readBytesAsString, decodeUtf8 } from "../../utils/byte_functions/string.js";
 import { BasicPreset } from "../basic_soundfont/basic_preset.js";
 import { PresetZone } from "./preset_zones.js";
 import { consoleColors } from "../../utils/other.js";
 import { SpessaSynthInfo } from "../../utils/loggin.js";
 import { isValidXGMSB } from "../../utils/xg_hacks.js";
+import { IndexedByteArray } from "../../utils/indexed_array.js";
 
 /**
  * parses soundfont presets, also includes function for getting the generators and samples from midi note and velocity
@@ -22,6 +23,10 @@ export class Preset extends BasicPreset
      * @type {number}
      */
     zonesCount = 0;
+    /**
+     * @type {IndexedByteArray}
+     */
+    presetNameUtf8Data;
     
     /**
      * Creates a preset
@@ -34,9 +39,10 @@ export class Preset extends BasicPreset
         super(sf2);
         if (!emptyPreset)
         {
-            this.presetName = readBytesAsString(presetChunk.chunkData, 20)
-                .replace(/\d{3}:\d{3}/, ""); // remove those pesky "000:001"
-            
+            this.presetNameUtf8Data = new IndexedByteArray(40);
+            this.presetNameUtf8Data.set(presetChunk.chunkData.slice(presetChunk.chunkData.currentIndex, presetChunk.chunkData.currentIndex + 20),0);
+            this.presetName = "";
+            presetChunk.chunkData.currentIndex += 20;
             this.program = readLittleEndian(presetChunk.chunkData, 2);
             this.bank = readLittleEndian(presetChunk.chunkData, 1); // Bank MSB is only first byte
             this.bankLSB = readLittleEndian(presetChunk.chunkData, 1); // Bank LSB is second byte
@@ -46,7 +52,6 @@ export class Preset extends BasicPreset
             this.library = readLittleEndian(presetChunk.chunkData, 4);
             this.genre = readLittleEndian(presetChunk.chunkData, 4);
             this.morphology = readLittleEndian(presetChunk.chunkData, 4);
-            // console.log(`${this.bank}:${this.bankLSB}:${this.program} at ${this.zoneStartIndex}: ${this.presetName}`);
         }
     }
     
@@ -63,11 +68,12 @@ export class Preset extends BasicPreset
 
 /**
  * Reads the presets
- * @param presetChunk {RiffChunk}
- * @param parent {BasicSoundBank}
+ * @param presetChunk {RiffChunk} preset chunk
+ * @param parent {BasicSoundBank} parent sound bank
+ * @param shadowPresets {boolean} shadow legacy SF2 presets for LSB (true by default)
  * @returns {Preset[]}
  */
-export function readPresets(presetChunk, parent)
+export function readPresets(presetChunk, parent, shadowPresets = true)
 {
     /**
      * @type {Preset[]}
@@ -95,8 +101,7 @@ export function readPresets(presetChunk, parent)
             previous.zonesCount = preset.zoneStartIndex - previous.zoneStartIndex;
         }
         presets.push(preset);
-        // console.log(preset);
-        if (parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024) // Must be SF2 and not an XG (or GM2) MSB.
+        if ((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024) && shadowPresets) // Must be SF2 and not an XG (or GM2) MSB.
         {
             if (isValidXGMSB(preset.bank) == false && preset.bank !== 0)
             {
@@ -106,18 +111,17 @@ export function readPresets(presetChunk, parent)
                 shadowPreset.bankLSB = shadowPreset.bank;
                 shadowPreset.bank = 0;
                 presets.push(shadowPreset);
-                // console.log(shadowPreset);
             }
         }
     }
     // remove EOP
     presets.pop();
-    if (((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024)) && presets[presets.length - 1].presetName == "EOP") // Must be SF2 and not an XG (or GM2) MSB.
+    if ((((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024)) && presets[presets.length - 1].presetName == "EOP") && shadowPresets) // Must be SF2 and not an XG (or GM2) MSB.
     {
         presets.pop(); // eop is copied and then removed (in the rare edge case that bank of eop is non-zero)
     }
 
-    if (parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024) // Must be SF2 and not an XG (or GM2) MSB.
+    if ((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024) && shadowPresets) // Must be SF2 and not an XG (or GM2) MSB.
     {
         let msb127Found = false;
         let msb120Found = false;
@@ -166,7 +170,7 @@ export function readPresets(presetChunk, parent)
         }
     }
 
-    if (((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024)) && presets[presets.length - 1].presetName == "EOP") // Must be SF2 and not an XG (or GM2) MSB.
+    if ((((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024)) && presets[presets.length - 1].presetName == "EOP") && shadowPresets) // Must be SF2 and not an XG (or GM2) MSB.
     {
         presets.pop(); // eop is copied and then removed (in the rare edge case that bank of eop is non-zero)
     }

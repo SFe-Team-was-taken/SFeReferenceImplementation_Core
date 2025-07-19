@@ -135,7 +135,13 @@ export class BasicSample
      * @type {boolean}
      */
     dataOverriden = true;
-    
+
+    /**
+     * Sample name UTF-8 data
+     * @type {IndexedByteArray}
+     */
+    sampleNameUtf8Data;    
+
     /**
      * The basic representation of a sample
      * @param sampleName {string} The sample's name
@@ -145,6 +151,7 @@ export class BasicSample
      * @param sampleType {sampleTypes} The sample's type, an enum that can indicate SF3
      * @param loopStart {number} The sample's loop start relative to the sample start in sample points
      * @param loopEnd {number} The sample's loop end relative to the sample start in sample points
+     * @param sampleNameUtf8Data {IndexedByteArray} The sample name's UTF-8 data
      */
     constructor(
         sampleName,
@@ -153,7 +160,8 @@ export class BasicSample
         samplePitchCorrection,
         sampleType,
         loopStart,
-        loopEnd
+        loopEnd,
+        sampleNameUtf8Data
     )
     {
         this.sampleName = sampleName;
@@ -163,6 +171,7 @@ export class BasicSample
         this.sampleLoopStartIndex = loopStart;
         this.sampleLoopEndIndex = loopEnd;
         this.sampleType = sampleType;
+        this.sampleNameUtf8Data = sampleNameUtf8Data;
     }
     
     /**
