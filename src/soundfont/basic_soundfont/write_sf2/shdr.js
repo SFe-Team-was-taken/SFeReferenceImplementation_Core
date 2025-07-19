@@ -17,14 +17,36 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
     const shdrData = new IndexedByteArray(shdrSize);
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const xshdrData = new IndexedByteArray(shdrSize);
-    console.log(`smplStartOffsets: ${smplStartOffsets}`);
-    console.log(`smplEndOffsets: ${smplEndOffsets}`);
+    
+    const encoder = new TextEncoder();
+
     let maxSampleLink = 0;
+
+    let longName = false;
+
     this.samples.forEach((sample, index) =>
     {
         // sample name
-        writeStringAsBytes(shdrData, sample.sampleName.substring(0, 20), 20);
-        writeStringAsBytes(xshdrData, sample.sampleName.substring(20), 20);
+        const encodedText = encoder.encode(sample.sampleName);
+        if (encodedText.length <= 20)
+        {
+            shdrData.set(encodedText,shdrData.currentIndex);
+        } 
+        else if (encodedText.length <= 40)
+        {
+            shdrData.set(encodedText.slice(0,20),shdrData.currentIndex);
+            xshdrData.set(encodedText.slice(20),xshdrData.currentIndex);
+            longName = true;
+        } 
+        else 
+        {
+            shdrData.set(encodedText.slice(0,20),shdrData.currentIndex);
+            xshdrData.set(encodedText.slice(20,40),xshdrData.currentIndex);
+            longName = true;
+        }
+        shdrData.currentIndex += 20;
+        xshdrData.currentIndex += 20;
+
         // start offset
         const dwStart = smplStartOffsets[index];
         if (enable64Bit)
@@ -98,6 +120,7 @@ export function getSHDR(smplStartOffsets, smplEndOffsets, enable64Bit)
     return {
         pdta: shdr,
         xdta: xshdr,
+        xdtaToggle: longName,
         highestIndex: maxSampleLink
     };
 }

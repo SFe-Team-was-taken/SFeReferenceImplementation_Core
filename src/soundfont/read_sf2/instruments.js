@@ -2,8 +2,8 @@ import { RiffChunk } from "../basic_soundfont/riff_chunk.js";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
 import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { BasicInstrument } from "../basic_soundfont/basic_instrument.js";
-
 import { InstrumentZone } from "./instrument_zones.js";
+import { IndexedByteArray } from "../../utils/indexed_array.js";
 
 /**
  * instrument.js
@@ -20,6 +20,10 @@ export class Instrument extends BasicInstrument
      * @type {number}
      */
     zonesCount = 0;
+    /**
+     * @type {IndexedByteArray}
+     */
+    instNameUtf8Data;
     
     /**
      * Creates an instrument
@@ -28,7 +32,10 @@ export class Instrument extends BasicInstrument
     constructor(instrumentChunk)
     {
         super();
-        this.instrumentName = readBytesAsString(instrumentChunk.chunkData, 20);
+        this.instNameUtf8Data = new IndexedByteArray(40);
+        this.instNameUtf8Data.set(instrumentChunk.chunkData.slice(instrumentChunk.chunkData.currentIndex, instrumentChunk.chunkData.currentIndex + 20),0);
+        this.instrumentName = "";
+        instrumentChunk.chunkData.currentIndex += 20;
         this.zoneStartIndex = readLittleEndian(instrumentChunk.chunkData, 2);
     }
     

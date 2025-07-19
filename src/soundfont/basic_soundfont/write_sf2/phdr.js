@@ -16,12 +16,34 @@ export function getPHDR(bankVersion, enable64Bit = false)
     // https://github.com/spessasus/soundfont-proposals/blob/main/extended_limits.md
     const xphdrData = new IndexedByteArray(phdrSize);
     // the preset start is adjusted in pbag, this is only for the terminal preset index
+    
+    const encoder = new TextEncoder();
+
+    let longName = false;
+
     let presetStart = 0;
     for (const preset of this.presets)
     {
         console.log(preset);
-        writeStringAsBytes(phdrData, preset.presetName.substring(0, 20), 20);
-        writeStringAsBytes(xphdrData, preset.presetName.substring(20), 20);
+        const encodedText = encoder.encode(preset.presetName);
+        if (encodedText.length <= 20)
+        {
+            phdrData.set(encodedText,phdrData.currentIndex);
+        } 
+        else if (encodedText.length <= 40)
+        {
+            phdrData.set(encodedText.slice(0,20),phdrData.currentIndex);
+            xphdrData.set(encodedText.slice(20),xphdrData.currentIndex);
+            longName = true;
+        } 
+        else 
+        {
+            phdrData.set(encodedText.slice(0,20),phdrData.currentIndex);
+            xphdrData.set(encodedText.slice(20,40),xphdrData.currentIndex);
+            longName = true;
+        }
+        phdrData.currentIndex += 20;
+        xphdrData.currentIndex += 20;
         
         writeWord(phdrData, preset.program);
         if (bankVersion === "soundfont2") {
@@ -59,10 +81,11 @@ export function getPHDR(bankVersion, enable64Bit = false)
     const phdr = writeRIFFChunkRaw("phdr", phdrData, false, false, enable64Bit);
     
     const xphdr = writeRIFFChunkRaw("phdr", xphdrData, false, false, enable64Bit);
-    
+
     return {
         pdta: phdr,
         xdta: xphdr,
+        xdtaToggle: longName,
         highestIndex: presetStart
     };
 }

@@ -159,7 +159,8 @@ class BasicSoundBank
             20,
             sampleTypes.monoSample,
             0,
-            127
+            127,
+            [83, 97, 119]
         );
         const sampleData = new Float32Array(128);
         for (let i = 0; i < 128; i++)
@@ -248,7 +249,8 @@ class BasicSoundBank
             sample.samplePitchCorrection,
             sample.sampleType,
             sample.sampleLoopStartIndex,
-            sample.sampleLoopEndIndex
+            sample.sampleLoopEndIndex,
+            sample.sampleNameUtf8Data
         );
         if (sample.isCompressed)
         {
