@@ -343,7 +343,12 @@ class SpessaSynthProcessor
      * are the chorus and reverb effects enabled?
      * @type {boolean}
      */
-    effectsEnabled;
+    effectsEnabled = true;
+    
+    /**
+     * one voice per note and track (issue #7)
+     */
+    _monophonicRetriggerMode = false;
     
     
     /**
@@ -757,7 +762,6 @@ class SpessaSynthProcessor
         // GM2 specification, section 4.1: volume is squared.
         // though, according to my own testing, Math.E seems like a better choice
         this.midiVolume = Math.pow(volume, Math.E);
-        this.setMasterParameter(masterParameterType.masterPan, this.pan);
     }
     
     /**

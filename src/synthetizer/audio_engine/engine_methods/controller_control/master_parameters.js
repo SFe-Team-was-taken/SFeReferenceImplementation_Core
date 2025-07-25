@@ -8,7 +8,8 @@ export const masterParameterType = {
     masterPan: 1,
     voicesCap: 2,
     interpolationType: 3,
-    midiSystem: 4
+    midiSystem: 4,
+    monophonicRetriggerMode: 5
 };
 
 /**
@@ -31,7 +32,6 @@ export function setMasterParameter(type, value)
         
         case masterParameterType.mainVolume:
             this.masterGain = value * SYNTHESIZER_GAIN;
-            this.setMasterParameter(masterParameterType.masterPan, this.pan);
             break;
         
         case masterParameterType.voicesCap:
@@ -44,5 +44,10 @@ export function setMasterParameter(type, value)
         
         case masterParameterType.midiSystem:
             this.setSystem(value);
+            break;
+        
+        case masterParameterType.monophonicRetriggerMode:
+            this._monophonicRetriggerMode = true;
+            break;
     }
 }
