@@ -41,7 +41,6 @@ export class SoundFontSample extends BasicSample
      * @param sampleType {number}
      * @param sampleDataArray {IndexedByteArray|Float32Array}
      * @param sampleIndex {number} initial sample index when loading the sfont
-     * @param sampleNameUtf8Data {IndexedByteArray} sample name UTF-8 data
      * Used for SF2Pack support
      */
     constructor(
@@ -56,8 +55,7 @@ export class SoundFontSample extends BasicSample
         linkedSampleIndex,
         sampleType,
         sampleDataArray,
-        sampleIndex,
-        sampleNameUtf8Data
+        sampleIndex
     )
     {
         // read sf3
@@ -72,8 +70,7 @@ export class SoundFontSample extends BasicSample
             samplePitchCorrection,
             sampleType,
             sampleLoopStartIndex - (sampleStartIndex / 2),
-            sampleLoopEndIndex - (sampleStartIndex / 2),
-            sampleNameUtf8Data
+            sampleLoopEndIndex - (sampleStartIndex / 2)
         );
         this.dataOverriden = false;
         this.isCompressed = compressed;
@@ -269,11 +266,7 @@ function readSample(index, sampleHeaderData, smplArrayData)
 {
     
     // read the sample name
- 
-    let sampleNameUtf8Data = new IndexedByteArray(40);
-    sampleNameUtf8Data.set(sampleHeaderData.slice(sampleHeaderData.currentIndex, sampleHeaderData.currentIndex + 20),0);
-    let sampleName = "";
-    sampleHeaderData.currentIndex += 20;
+    let sampleName = readBytesAsString(sampleHeaderData, 20);
     
     // read the sample start index
     let sampleStartIndex = readLittleEndian(sampleHeaderData, 4) * 2;
@@ -319,7 +312,6 @@ function readSample(index, sampleHeaderData, smplArrayData)
         sampleLink,
         sampleType,
         smplArrayData,
-        index,
-        sampleNameUtf8Data
+        index
     );
 }

@@ -9,7 +9,7 @@ import { readModulators } from "./modulators.js";
 import { readRIFFChunk, RiffChunk } from "../basic_soundfont/riff_chunk.js";
 import { consoleColors } from "../../utils/other.js";
 import { SpessaSynthGroup, SpessaSynthGroupEnd, SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin.js";
-import { readBytesAsString, decodeUtf8 } from "../../utils/byte_functions/string.js";
+import { readBytesAsString } from "../../utils/byte_functions/string.js";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_sync.min.js";
 import { BasicSoundBank } from "../basic_soundfont/basic_soundbank.js";
 import { Generator } from "../basic_soundfont/generator.js";
@@ -147,7 +147,6 @@ export class SoundFont2 extends BasicSoundBank
         {
             let chunk = readRIFFChunk(infoChunk.chunkData, true, false, is64Bit);
             let text;
-            let utf8Data;
             let sfeVersion;
             // special cases
             switch (chunk.header.toLowerCase())
@@ -222,10 +221,7 @@ export class SoundFont2 extends BasicSoundBank
                     }
                     break;
                 case "isng":
-                    utf8Data = new IndexedByteArray(chunk.chunkData.length);
-                    utf8Data.set(chunk.chunkData.slice(chunk.chunkData.currentIndex, chunk.chunkData.currentIndex + chunk.chunkData.length), 0);
-                    text = decodeUtf8(utf8Data);
-                    chunk.chunkData.currentIndex += chunk.chunkData.length;
+                    text = readBytesAsString(chunk.chunkData, chunk.chunkData.length, undefined, false);
                     this.soundFontInfo[chunk.header] = text;
 
                     switch (text)
@@ -286,10 +282,7 @@ export class SoundFont2 extends BasicSoundBank
                     }
                     break;
                 case "icrd":
-                    utf8Data = new IndexedByteArray(chunk.chunkData.length);
-                    utf8Data.set(chunk.chunkData.slice(chunk.chunkData.currentIndex, chunk.chunkData.currentIndex + chunk.chunkData.length), 0);
-                    text = decodeUtf8(utf8Data);
-                    chunk.chunkData.currentIndex += chunk.chunkData.length;
+                    text = readBytesAsString(chunk.chunkData, chunk.chunkData.length, undefined, false);
                     this.soundFontInfo[chunk.header] = text;
                     let dateValue;
                     let dateMonth;
@@ -358,10 +351,7 @@ export class SoundFont2 extends BasicSoundBank
                     break;
 
                 case "icmt":
-                    utf8Data = new IndexedByteArray(chunk.chunkData.length);
-                    utf8Data.set(chunk.chunkData.slice(chunk.chunkData.currentIndex, chunk.chunkData.currentIndex + chunk.chunkData.length), 0);
-                    text = decodeUtf8(utf8Data);
-                    chunk.chunkData.currentIndex += chunk.chunkData.length;
+                    text = readBytesAsString(chunk.chunkData, chunk.chunkData.length, false);
                     this.soundFontInfo[chunk.header] = text;
                     SpessaSynthInfo(
                         `%c"${chunk.header}": %c"${text}"`,
@@ -593,10 +583,7 @@ export class SoundFont2 extends BasicSoundBank
                                     break;
 
                                 default:
-                                    utf8Data = new IndexedByteArray(nestedChunk.chunkData.length);
-                                    utf8Data.set(nestedChunk.chunkData.slice(nestedChunk.chunkData.currentIndex, nestedChunk.chunkData.currentIndex + nestedChunk.chunkData.length), 0);
-                                    text = decodeUtf8(utf8Data);
-                                    nestedChunk.chunkData.currentIndex += nestedChunk.chunkData.length;
+                                    text = readBytesAsString(nestedChunk.chunkData, nestedChunk.chunkData.length);
                                     this.sfeInfo[nestedChunk.header] = text,
                                     SpessaSynthInfo(
                                         `%c"isfe.${nestedChunk.header}": %c"${text}"`,
@@ -619,10 +606,7 @@ export class SoundFont2 extends BasicSoundBank
                     break;
                 
                 default:
-                    utf8Data = new IndexedByteArray(chunk.chunkData.length);
-                    utf8Data.set(chunk.chunkData.slice(chunk.chunkData.currentIndex, chunk.chunkData.currentIndex + chunk.chunkData.length), 0);
-                    text = decodeUtf8(utf8Data);
-                    chunk.chunkData.currentIndex += chunk.chunkData.length;
+                    text = readBytesAsString(chunk.chunkData, chunk.chunkData.length);
                     this.soundFontInfo[chunk.header] = text;
                     SpessaSynthInfo(
                         `%c"${chunk.header}": %c"${text}"`,
@@ -818,7 +802,7 @@ export class SoundFont2 extends BasicSoundBank
             {
                 samples.forEach((s, i) =>
                 {
-                    s.sampleNameUtf8Data.set(xSamples[i].sampleNameUtf8Data.slice(0,20), 20);
+                    s.sampleName += xSamples[i].sampleName;
                     s.linkedSampleIndex |= xSamples[i].linkedSampleIndex << 16;
                     if (is64Bit)
                     {
@@ -830,12 +814,6 @@ export class SoundFont2 extends BasicSoundBank
                 });
             }
         }
-
-        samples.forEach(s =>
-        {
-            console.log(s.sampleNameUtf8Data);
-            s.sampleName = decodeUtf8(s.sampleNameUtf8Data);
-        });
         // trim names
         samples.forEach(s => s.sampleName = s.sampleName.trim());
         this.samples.push(...samples);
@@ -862,7 +840,7 @@ export class SoundFont2 extends BasicSoundBank
             {
                 instruments.forEach((inst, i) =>
                 {
-                    inst.instNameUtf8Data.set(xInst[i].instNameUtf8Data.slice(0,20), 20);
+                    inst.instrumentName += xInst[i].instrumentName;
                     inst.zoneStartIndex |= xInst[i].zoneStartIndex;
                 });
                 // adjust zone counts
@@ -876,11 +854,6 @@ export class SoundFont2 extends BasicSoundBank
             }
             
         }
-        
-        instruments.forEach(i =>
-        {
-            i.instrumentName = decodeUtf8(i.instNameUtf8Data);
-        });
         // trim names
         instruments.forEach(i => i.instrumentName = i.instrumentName.trim());
         this.instruments.push(...instruments);
@@ -934,7 +907,7 @@ export class SoundFont2 extends BasicSoundBank
             {
                 presets.forEach((pres, i) =>
                 {
-                    pres.presetNameUtf8Data.set(xPreset[i].presetNameUtf8Data.slice(0,20), 20);
+                    pres.presetName += xPreset[i].presetName;
                     pres.zoneStartIndex |= xPreset[i].zoneStartIndex;
                 });
                 // adjust zone counts
@@ -949,13 +922,8 @@ export class SoundFont2 extends BasicSoundBank
             
         }
         
-        presets.forEach(p =>
-        {
-            p.presetName = decodeUtf8(p.presetNameUtf8Data);
-        });
         // trim names
         presets.forEach(p => p.presetName === p.presetName.trim());
-        presets.forEach(p => p.presetName === p.presetName.replace(/\d{3}:\d{3}/, "")); // remove those pesky "000:001"
         this.addPresets(...presets);
         
         const pbagIndexes = readZoneIndexes(pbagChunk);
