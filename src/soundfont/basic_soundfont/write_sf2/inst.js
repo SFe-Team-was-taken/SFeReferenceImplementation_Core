@@ -17,10 +17,33 @@ export function getINST(enable64Bit = false)
     const xinstData = new IndexedByteArray(instSize);
     // the instrument start index is adjusted in ibag, write it here
     let instrumentStart = 0;
+
+    const encoder = new TextEncoder();
+
+        let longName = false;
+
     for (const inst of this.instruments)
     {
-        writeStringAsBytes(instData, inst.instrumentName.substring(0, 20), 20);
-        writeStringAsBytes(xinstData, inst.instrumentName.substring(20), 20);
+        const encodedText = encoder.encode(inst.instrumentName);
+        if (encodedText.length <= 20)
+        {
+            instData.set(encodedText,instData.currentIndex);
+        } 
+        else if (encodedText.length <= 40)
+        {
+            instData.set(encodedText.slice(0,20),instData.currentIndex);
+            xinstData.set(encodedText.slice(20),xinstData.currentIndex);
+            longName = true;
+        } 
+        else 
+        {
+            instData.set(encodedText.slice(0,20),instData.currentIndex);
+            xinstData.set(encodedText.slice(20,40),xinstData.currentIndex);
+            longName = true;
+        }
+        instData.currentIndex += 20;
+        xinstData.currentIndex += 20;
+
         writeWord(instData, instrumentStart & 0xFFFF);
         writeWord(xinstData, instrumentStart >> 16);
         instrumentStart += inst.instrumentZones.length + 1; // global
@@ -37,6 +60,7 @@ export function getINST(enable64Bit = false)
     return {
         pdta: inst,
         xdta: xinst,
+        xdtaToggle: longName,
         highestIndex: instrumentStart
     };
 }
