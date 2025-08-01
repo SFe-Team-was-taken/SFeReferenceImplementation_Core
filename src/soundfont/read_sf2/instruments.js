@@ -35,7 +35,7 @@ export class Instrument extends BasicInstrument
         instrumentChunk.chunkData.currentIndex += 20;
         if (useXdta)
         {
-            instNameArray.set(xdtaChunk.chunkData.slice(xdtaChunk.chunkData.currentIndex, xdtaChunk.chunkData.currentIndex + 20), 20)
+            instNameArray.set(xdtaChunk.chunkData.slice(xdtaChunk.chunkData.currentIndex, xdtaChunk.chunkData.currentIndex + 20), 20);
             xdtaChunk.chunkData.currentIndex += 20;
         }
         this.instrumentName = decodeUtf8(instNameArray);

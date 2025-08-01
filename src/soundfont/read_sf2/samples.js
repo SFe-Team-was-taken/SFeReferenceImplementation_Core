@@ -341,6 +341,10 @@ function readSample(index, sampleHeaderData, smplArrayData, useXdta = false, xdt
 
     // read the sample rate
     let sampleRate = readLittleEndian(sampleHeaderData, 4);
+    if (useXdta)
+    {
+        xdtaChunkData.currentIndex += 4;
+    }
     
     // read the original sample pitch
     let samplePitch = sampleHeaderData[sampleHeaderData.currentIndex++];
@@ -349,10 +353,17 @@ function readSample(index, sampleHeaderData, smplArrayData, useXdta = false, xdt
         // if it's out of range, then default to 60
         samplePitch = 60;
     }
-    
+    if (useXdta)
+    {
+        xdtaChunkData.currentIndex++;
+    }
+
     // read the sample pitch correction
     let samplePitchCorrection = signedInt8(sampleHeaderData[sampleHeaderData.currentIndex++]);
-    
+    if (useXdta)
+    {
+        xdtaChunkData.currentIndex++;
+    }
     
     // read the link to the other channel
     let sampleLink = readLittleEndian(sampleHeaderData, 2);
@@ -362,7 +373,10 @@ function readSample(index, sampleHeaderData, smplArrayData, useXdta = false, xdt
         sampleLink |= xSampleLink << 16;
     }
     let sampleType = readLittleEndian(sampleHeaderData, 2);
-    
+    if (useXdta)
+    {
+        xdtaChunkData.currentIndex += 2;
+    }
     
     return new SoundFontSample(
         sampleName,

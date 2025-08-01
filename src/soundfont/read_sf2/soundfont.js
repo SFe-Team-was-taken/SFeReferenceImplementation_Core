@@ -874,19 +874,29 @@ export class SoundFont2 extends BasicSoundBank
          */
         let presetModulators = readModulators(pmodChunk);
         
-        const presets = readPresets(phdrChunk, this);
+
+        let presets;
+        if (isExtended)
+        {
+            presets = readPresets(phdrChunk, this, true, xChunks.phdr);
+        }
+        else
+        {
+            presets = readPresets(phdrChunk, this, false, undefined);
+        }
+
         
         if (isExtended)
         {
             // apply extensions to presets
-            const xPreset = readPresets(xChunks.phdr, this);
-            if (xPreset.length === presets.length)
+            if (phdrChunk.length === xChunks.phdr.length)
             {
-                presets.forEach((pres, i) =>
-                {
-                    pres.presetName += xPreset[i].presetName;
-                    pres.zoneStartIndex |= xPreset[i].zoneStartIndex;
-                });
+                // presets.forEach((pres, i) =>
+                // {
+                //     pres.presetName += xPreset[i].presetName;
+                //     pres.zoneStartIndex |= xPreset[i].zoneStartIndex;
+                // });
+
                 // adjust zone counts
                 presets.forEach((preset, i) =>
                 {
@@ -895,8 +905,7 @@ export class SoundFont2 extends BasicSoundBank
                         preset.zonesCount = presets[i + 1].zoneStartIndex - preset.zoneStartIndex;
                     }
                 });
-            }
-            
+            }    
         }
         
         // trim names
