@@ -2,7 +2,7 @@ import { RiffChunk } from "../basic_soundfont/riff_chunk.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
 import { readLittleEndian, signedInt8 } from "../../utils/byte_functions/little_endian.js";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin.js";
-import { readBytesAsString, decodeUtf8 } from "../../utils/byte_functions/string.js";
+import { decodeUtf8 } from "../../utils/byte_functions/string.js";
 import { BasicSample } from "../basic_soundfont/basic_sample.js";
 import { consoleColors } from "../../utils/other.js";
 
@@ -283,11 +283,11 @@ function readSample(index, sampleHeaderData, smplArrayData, useXdta = false, xdt
     // read the sample name
     let sampleNameArray = new IndexedByteArray(40);
     sampleNameArray.set(sampleHeaderData.slice(sampleHeaderData.currentIndex, sampleHeaderData.currentIndex + 20), 0)
-    sampleHeaderData.currentIndex += 20
+    sampleHeaderData.currentIndex += 20;
     if (useXdta)
     {
         sampleNameArray.set(xdtaChunkData.slice(xdtaChunkData.currentIndex, xdtaChunkData.currentIndex + 20), 20)
-        xdtaChunkData.currentIndex += 20
+        xdtaChunkData.currentIndex += 20;
     }
     let sampleName = decodeUtf8(sampleNameArray);
     

@@ -820,30 +820,17 @@ export class SoundFont2 extends BasicSoundBank
          */
         let instrumentModulators = readModulators(imodChunk);
         
-        const instruments = readInstruments(instChunk);
+        let instruments;
         
         if (isExtended)
         {
-            // apply extensions to instruments
-            const xInst = readInstruments(xChunks.inst);
-            if (xInst.length === instruments.length)
-            {
-                instruments.forEach((inst, i) =>
-                {
-                    inst.instrumentName += xInst[i].instrumentName;
-                    inst.zoneStartIndex |= xInst[i].zoneStartIndex;
-                });
-                // adjust zone counts
-                instruments.forEach((inst, i) =>
-                {
-                    if (i < instruments.length - 1)
-                    {
-                        inst.zonesCount = instruments[i + 1].zoneStartIndex - inst.zoneStartIndex;
-                    }
-                });
-            }
-            
+            instruments = readInstruments(instChunk, true, xChunks.inst);
         }
+        else 
+        {
+            instruments = readInstruments(instChunk, false, undefined);
+        }
+
         // trim names
         instruments.forEach(i => i.instrumentName = i.instrumentName.trim());
         this.instruments.push(...instruments);
