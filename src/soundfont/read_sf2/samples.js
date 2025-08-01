@@ -297,7 +297,7 @@ function readSample(index, sampleHeaderData, smplArrayData, useXdta = false, xdt
     if (useXdta)
     {
         let xSampleStartIndex = readLittleEndian(xdtaChunkData, 4) * 2;
-        if (is64Bit)
+        if (is64Bit) // upper 32 bits of the sample start index, ignored in 32-bit xdta.
         {
             sampleStartIndex += (xSampleStartIndex * 4294967296);
         }
@@ -309,7 +309,7 @@ function readSample(index, sampleHeaderData, smplArrayData, useXdta = false, xdt
     if (useXdta)
     {
         let xSampleEndIndex = readLittleEndian(xdtaChunkData, 4) * 2;
-        if (is64Bit)
+        if (is64Bit) // upper 32 bits of the sample end index, ignored in 32-bit xdta.
         {
             sampleEndIndex += (xSampleEndIndex * 4294967296);
         }
@@ -320,7 +320,7 @@ function readSample(index, sampleHeaderData, smplArrayData, useXdta = false, xdt
     if (useXdta)
     {
         let xSampleLoopStartIndex = readLittleEndian(xdtaChunkData, 4) * 2;
-        if (is64Bit)
+        if (is64Bit) // upper 32 bits of the sample loop start index, ignored in 32-bit xdta.
         {
             sampleLoopStartIndex += (xSampleLoopStartIndex * 4294967296);
         }
@@ -332,7 +332,7 @@ function readSample(index, sampleHeaderData, smplArrayData, useXdta = false, xdt
     if (useXdta)
     {
         let xSampleLoopEndIndex = readLittleEndian(xdtaChunkData, 4) * 2;
-        if (is64Bit)
+        if (is64Bit) // upper 32 bits of the sample loop end index, ignored in 32-bit xdta.
         {
             sampleLoopEndIndex += (xSampleLoopEndIndex * 4294967296);
         }

@@ -61,6 +61,7 @@ export function getStringBytes(string, addZero = false, ensureEven = false)
 }
 
 /**
+ * This function decodes a UTF-8 string without using TextDecoder. This is done because AudioWorkletGlobalScope does not support the TextDecoder.
  * @param utf8Array {IndexedByteArray}
  * @returns {string}
  */
