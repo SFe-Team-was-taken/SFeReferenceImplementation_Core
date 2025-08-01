@@ -792,28 +792,18 @@ export class SoundFont2 extends BasicSoundBank
          * (the current index points to start of the smpl read)
          */
         mainFileArray.currentIndex = this.sampleDataStartIndex;
-        const samples = readSamples(shdrChunk, sampleData, !isExtended);
         
+        let samples;
+
         if (isExtended)
         {
-            // apply extensions to samples
-            const xSamples = readSamples(xChunks.shdr, new Float32Array(1), false);
-            if (xSamples.length === samples.length)
-            {
-                samples.forEach((s, i) =>
-                {
-                    s.sampleName += xSamples[i].sampleName;
-                    s.linkedSampleIndex |= xSamples[i].linkedSampleIndex << 16;
-                    if (is64Bit)
-                    {
-                        s.sampleStartIndex += xSamples[i].sampleStartIndex * 4294967296;
-                        s.sampleEndIndex += xSamples[i].sampleEndIndex * 4294967296;
-                        s.sampleLoopStartIndex += xSamples[i].sampleLoopStartIndex * 4294967296;
-                        s.sampleLoopEndIndex += xSamples[i].sampleLoopEndIndex * 4294967296;
-                    }
-                });
-            }
+            samples = readSamples(shdrChunk, sampleData, true, true, xChunks.shdr, is64Bit);
         }
+        else
+        {
+            samples = readSamples(shdrChunk, sampleData, true, false, undefined, false);
+        }
+
         // trim names
         samples.forEach(s => s.sampleName = s.sampleName.trim());
         this.samples.push(...samples);
@@ -830,30 +820,17 @@ export class SoundFont2 extends BasicSoundBank
          */
         let instrumentModulators = readModulators(imodChunk);
         
-        const instruments = readInstruments(instChunk);
+        let instruments;
         
         if (isExtended)
         {
-            // apply extensions to instruments
-            const xInst = readInstruments(xChunks.inst);
-            if (xInst.length === instruments.length)
-            {
-                instruments.forEach((inst, i) =>
-                {
-                    inst.instrumentName += xInst[i].instrumentName;
-                    inst.zoneStartIndex |= xInst[i].zoneStartIndex;
-                });
-                // adjust zone counts
-                instruments.forEach((inst, i) =>
-                {
-                    if (i < instruments.length - 1)
-                    {
-                        inst.zonesCount = instruments[i + 1].zoneStartIndex - inst.zoneStartIndex;
-                    }
-                });
-            }
-            
+            instruments = readInstruments(instChunk, true, xChunks.inst);
         }
+        else 
+        {
+            instruments = readInstruments(instChunk, false, undefined);
+        }
+
         // trim names
         instruments.forEach(i => i.instrumentName = i.instrumentName.trim());
         this.instruments.push(...instruments);
@@ -897,19 +874,29 @@ export class SoundFont2 extends BasicSoundBank
          */
         let presetModulators = readModulators(pmodChunk);
         
-        const presets = readPresets(phdrChunk, this);
+
+        let presets;
+        if (isExtended)
+        {
+            presets = readPresets(phdrChunk, this, true, xChunks.phdr);
+        }
+        else
+        {
+            presets = readPresets(phdrChunk, this, false, undefined);
+        }
+
         
         if (isExtended)
         {
             // apply extensions to presets
-            const xPreset = readPresets(xChunks.phdr, this);
-            if (xPreset.length === presets.length)
+            if (phdrChunk.length === xChunks.phdr.length)
             {
-                presets.forEach((pres, i) =>
-                {
-                    pres.presetName += xPreset[i].presetName;
-                    pres.zoneStartIndex |= xPreset[i].zoneStartIndex;
-                });
+                // presets.forEach((pres, i) =>
+                // {
+                //     pres.presetName += xPreset[i].presetName;
+                //     pres.zoneStartIndex |= xPreset[i].zoneStartIndex;
+                // });
+
                 // adjust zone counts
                 presets.forEach((preset, i) =>
                 {
@@ -918,8 +905,7 @@ export class SoundFont2 extends BasicSoundBank
                         preset.zonesCount = presets[i + 1].zoneStartIndex - preset.zoneStartIndex;
                     }
                 });
-            }
-            
+            }    
         }
         
         // trim names

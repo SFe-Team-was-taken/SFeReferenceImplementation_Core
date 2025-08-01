@@ -1,6 +1,7 @@
 import { RiffChunk } from "../basic_soundfont/riff_chunk.js";
+import { IndexedByteArray } from "../../utils/indexed_array.js";
 import { readLittleEndian } from "../../utils/byte_functions/little_endian.js";
-import { readBytesAsString } from "../../utils/byte_functions/string.js";
+import { decodeUtf8 } from "../../utils/byte_functions/string.js";
 import { BasicPreset } from "../basic_soundfont/basic_preset.js";
 import { PresetZone } from "./preset_zones.js";
 import { consoleColors } from "../../utils/other.js";
@@ -28,24 +29,67 @@ export class Preset extends BasicPreset
      * @param presetChunk {RiffChunk}
      * @param sf2 {BasicSoundBank}
      * @param emptyPreset {boolean}
+     * @param useXdta {boolean}
+     * @param xdtaChunk {RiffChunk}
      */
-    constructor(presetChunk, sf2, emptyPreset = false)
+    constructor(presetChunk, sf2, emptyPreset = false, useXdta = false, xdtaChunk = undefined)
     {
         super(sf2);
         if (!emptyPreset)
         {
-            this.presetName = readBytesAsString(presetChunk.chunkData, 20)
+            let presetNameArray = new IndexedByteArray(40);
+            presetNameArray.set(presetChunk.chunkData.slice(presetChunk.chunkData.currentIndex, presetChunk.chunkData.currentIndex + 20), 0);
+            presetChunk.chunkData.currentIndex += 20;
+            if (useXdta)
+            {
+                presetNameArray.set(xdtaChunk.chunkData.slice(xdtaChunk.chunkData.currentIndex, xdtaChunk.chunkData.currentIndex + 20), 20);
+                xdtaChunk.chunkData.currentIndex += 20;
+            }
+
+            this.presetName = decodeUtf8(presetNameArray)
                 .replace(/\d{3}:\d{3}/, ""); // remove those pesky "000:001"
             
             this.program = readLittleEndian(presetChunk.chunkData, 2);
+            if (useXdta)
+            {
+                xdtaChunk.chunkData.currentIndex += 2;
+            }
+            
             this.bank = readLittleEndian(presetChunk.chunkData, 1); // Bank MSB is only first byte
+            if (useXdta)
+            {
+                xdtaChunk.chunkData.currentIndex += 1;
+            }
+
             this.bankLSB = readLittleEndian(presetChunk.chunkData, 1); // Bank LSB is second byte
+            if (useXdta)
+            {
+                xdtaChunk.chunkData.currentIndex += 1;
+            }            
+            
             this.zoneStartIndex = readLittleEndian(presetChunk.chunkData, 2);
+            if (useXdta)
+            {
+                let xZoneStartIndex = readLittleEndian(xdtaChunk.chunkData, 2);
+                this.zoneStartIndex += xZoneStartIndex << 16;
+            }
             
             // read the dword
             this.library = readLittleEndian(presetChunk.chunkData, 4);
+            if (useXdta)
+            {
+                xdtaChunk.chunkData.currentIndex += 4;
+            }
             this.genre = readLittleEndian(presetChunk.chunkData, 4);
+            if (useXdta)
+            {
+                xdtaChunk.chunkData.currentIndex += 4;
+            }
             this.morphology = readLittleEndian(presetChunk.chunkData, 4);
+            if (useXdta)
+            {
+                xdtaChunk.chunkData.currentIndex += 4;
+            }
             // console.log(`${this.bank}:${this.bankLSB}:${this.program} at ${this.zoneStartIndex}: ${this.presetName}`);
         }
     }
@@ -65,9 +109,11 @@ export class Preset extends BasicPreset
  * Reads the presets
  * @param presetChunk {RiffChunk}
  * @param parent {BasicSoundBank}
+ * @param useXdta {boolean}
+ * @param xdtaChunk {RiffChunk}
  * @returns {Preset[]}
  */
-export function readPresets(presetChunk, parent)
+export function readPresets(presetChunk, parent, useXdta = false, xdtaChunk = undefined)
 {
     /**
      * @type {Preset[]}
@@ -86,9 +132,16 @@ export function readPresets(presetChunk, parent)
                                 consoleColors.recognized);
     }
 
+    let xdtaValid = false;
+    if (useXdta)
+    {
+        xdtaValid = presetChunk.size == xdtaChunk.size;
+    }
+
     while (presetChunk.chunkData.length > presetChunk.chunkData.currentIndex)
     {
-        let preset = new Preset(presetChunk, parent);
+        console.log(presetChunk.chunkData.currentIndex);
+        let preset = new Preset(presetChunk, parent, false, xdtaValid, xdtaChunk);
         if (presets.length > 0)
         {
             const previous = presets[presets.length - 1];
@@ -172,15 +225,4 @@ export function readPresets(presetChunk, parent)
     }
 
     return presets;
-}
-
-
-/**
- * Duplicate a preset
- * @param preset {Preset}
- * @returns {Preset} 
- */
-export function duplicatePreset(preset)
-{
-    return 1;
 }

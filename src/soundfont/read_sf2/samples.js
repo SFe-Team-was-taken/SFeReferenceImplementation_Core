@@ -2,7 +2,7 @@ import { RiffChunk } from "../basic_soundfont/riff_chunk.js";
 import { IndexedByteArray } from "../../utils/indexed_array.js";
 import { readLittleEndian, signedInt8 } from "../../utils/byte_functions/little_endian.js";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../utils/loggin.js";
-import { readBytesAsString } from "../../utils/byte_functions/string.js";
+import { decodeUtf8 } from "../../utils/byte_functions/string.js";
 import { BasicSample } from "../basic_soundfont/basic_sample.js";
 import { consoleColors } from "../../utils/other.js";
 
@@ -228,18 +228,30 @@ export class SoundFontSample extends BasicSample
  * @param sampleHeadersChunk {RiffChunk}
  * @param smplChunkData {IndexedByteArray|Float32Array}
  * @param linkSamples {boolean}
+ * @param useXdta {boolean}
+ * @param xdtaChunk {RiffChunk}
+ * @param is64Bit {boolean}
  * @returns {SoundFontSample[]}
  */
-export function readSamples(sampleHeadersChunk, smplChunkData, linkSamples = true)
+export function readSamples(sampleHeadersChunk, smplChunkData, linkSamples = true, useXdta = false, xdtaChunk = undefined, is64Bit = false)
 {
     /**
      * @type {SoundFontSample[]}
      */
     let samples = [];
     let index = 0;
+    let xdtaChunkData;
+    if (useXdta)
+    {
+        xdtaChunkData = xdtaChunk.chunkData;
+    }
+    else
+    {
+        xdtaChunkData = new IndexedByteArray(1);
+    }
     while (sampleHeadersChunk.chunkData.length > sampleHeadersChunk.chunkData.currentIndex)
     {
-        const sample = readSample(index, sampleHeadersChunk.chunkData, smplChunkData);
+        const sample = readSample(index, sampleHeadersChunk.chunkData, smplChunkData, useXdta, xdtaChunkData, is64Bit);
         samples.push(sample);
         index++;
     }
@@ -259,29 +271,80 @@ export function readSamples(sampleHeadersChunk, smplChunkData, linkSamples = tru
  * Reads it into a sample
  * @param index {number}
  * @param sampleHeaderData {IndexedByteArray}
- * @param smplArrayData {IndexedByteArray|Float32Array}
+ * @param smplArrayData {IndexedByteArray|Float32Array} 
+ * @param useXdta {boolean}
+ * @param xdtaChunkData {RiffChunk}
+ * @param is64Bit {boolean}
  * @returns {SoundFontSample}
  */
-function readSample(index, sampleHeaderData, smplArrayData)
+function readSample(index, sampleHeaderData, smplArrayData, useXdta = false, xdtaChunkData = undefined, is64Bit = false)
 {
     
     // read the sample name
-    let sampleName = readBytesAsString(sampleHeaderData, 20);
+    let sampleNameArray = new IndexedByteArray(40);
+    sampleNameArray.set(sampleHeaderData.slice(sampleHeaderData.currentIndex, sampleHeaderData.currentIndex + 20), 0)
+    sampleHeaderData.currentIndex += 20;
+    if (useXdta)
+    {
+        sampleNameArray.set(xdtaChunkData.slice(xdtaChunkData.currentIndex, xdtaChunkData.currentIndex + 20), 20)
+        xdtaChunkData.currentIndex += 20;
+    }
+    let sampleName = decodeUtf8(sampleNameArray);
     
+
     // read the sample start index
     let sampleStartIndex = readLittleEndian(sampleHeaderData, 4) * 2;
+    if (useXdta)
+    {
+        let xSampleStartIndex = readLittleEndian(xdtaChunkData, 4) * 2;
+        if (is64Bit) // upper 32 bits of the sample start index, ignored in 32-bit xdta.
+        {
+            sampleStartIndex += (xSampleStartIndex * 4294967296);
+        }
+    }
+
     
     // read the sample end index
     let sampleEndIndex = readLittleEndian(sampleHeaderData, 4) * 2;
+    if (useXdta)
+    {
+        let xSampleEndIndex = readLittleEndian(xdtaChunkData, 4) * 2;
+        if (is64Bit) // upper 32 bits of the sample end index, ignored in 32-bit xdta.
+        {
+            sampleEndIndex += (xSampleEndIndex * 4294967296);
+        }
+    }
     
     // read the sample looping start index
     let sampleLoopStartIndex = readLittleEndian(sampleHeaderData, 4);
-    
+    if (useXdta)
+    {
+        let xSampleLoopStartIndex = readLittleEndian(xdtaChunkData, 4) * 2;
+        if (is64Bit) // upper 32 bits of the sample loop start index, ignored in 32-bit xdta.
+        {
+            sampleLoopStartIndex += (xSampleLoopStartIndex * 4294967296);
+        }
+    }
+
+
     // read the sample looping end index
     let sampleLoopEndIndex = readLittleEndian(sampleHeaderData, 4);
-    
+    if (useXdta)
+    {
+        let xSampleLoopEndIndex = readLittleEndian(xdtaChunkData, 4) * 2;
+        if (is64Bit) // upper 32 bits of the sample loop end index, ignored in 32-bit xdta.
+        {
+            sampleLoopEndIndex += (xSampleLoopEndIndex * 4294967296);
+        }
+    }
+
+
     // read the sample rate
     let sampleRate = readLittleEndian(sampleHeaderData, 4);
+    if (useXdta)
+    {
+        xdtaChunkData.currentIndex += 4;
+    }
     
     // read the original sample pitch
     let samplePitch = sampleHeaderData[sampleHeaderData.currentIndex++];
@@ -290,15 +353,30 @@ function readSample(index, sampleHeaderData, smplArrayData)
         // if it's out of range, then default to 60
         samplePitch = 60;
     }
-    
+    if (useXdta)
+    {
+        xdtaChunkData.currentIndex++;
+    }
+
     // read the sample pitch correction
     let samplePitchCorrection = signedInt8(sampleHeaderData[sampleHeaderData.currentIndex++]);
-    
+    if (useXdta)
+    {
+        xdtaChunkData.currentIndex++;
+    }
     
     // read the link to the other channel
     let sampleLink = readLittleEndian(sampleHeaderData, 2);
+    if (useXdta)
+    {
+        let xSampleLink = readLittleEndian(xdtaChunkData, 2);
+        sampleLink |= xSampleLink << 16;
+    }
     let sampleType = readLittleEndian(sampleHeaderData, 2);
-    
+    if (useXdta)
+    {
+        xdtaChunkData.currentIndex += 2;
+    }
     
     return new SoundFontSample(
         sampleName,
