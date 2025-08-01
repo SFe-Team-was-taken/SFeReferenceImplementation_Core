@@ -792,28 +792,18 @@ export class SoundFont2 extends BasicSoundBank
          * (the current index points to start of the smpl read)
          */
         mainFileArray.currentIndex = this.sampleDataStartIndex;
-        const samples = readSamples(shdrChunk, sampleData, !isExtended);
         
+        let samples;
+
         if (isExtended)
         {
-            // apply extensions to samples
-            const xSamples = readSamples(xChunks.shdr, new Float32Array(1), false);
-            if (xSamples.length === samples.length)
-            {
-                samples.forEach((s, i) =>
-                {
-                    s.sampleName += xSamples[i].sampleName;
-                    s.linkedSampleIndex |= xSamples[i].linkedSampleIndex << 16;
-                    if (is64Bit)
-                    {
-                        s.sampleStartIndex += xSamples[i].sampleStartIndex * 4294967296;
-                        s.sampleEndIndex += xSamples[i].sampleEndIndex * 4294967296;
-                        s.sampleLoopStartIndex += xSamples[i].sampleLoopStartIndex * 4294967296;
-                        s.sampleLoopEndIndex += xSamples[i].sampleLoopEndIndex * 4294967296;
-                    }
-                });
-            }
+            samples = readSamples(shdrChunk, sampleData, true, true, xChunks.shdr, is64Bit);
         }
+        else
+        {
+            samples = readSamples(shdrChunk, sampleData, true, false, undefined, false);
+        }
+
         // trim names
         samples.forEach(s => s.sampleName = s.sampleName.trim());
         this.samples.push(...samples);

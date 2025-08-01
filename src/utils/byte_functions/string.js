@@ -97,7 +97,7 @@ export function decodeUtf8(utf8Array)
                 {
                     error = 1;
                     decodedChar = String.fromCodePoint(65533);
-                    secondChar = utfChar[1];
+                    secondChar = utf8Char[1];
                 }
                 else if (utf8Char[1] < 192) // continuation bytes
                 {
@@ -116,7 +116,7 @@ export function decodeUtf8(utf8Array)
                 {
                     error = 1;
                     decodedChar = String.fromCodePoint(65533);
-                    secondChar = utfChar[1];
+                    secondChar = utf8Char[1];
                 }
                 else if (utf8Char[1] < 160 && utf8Char[0] == 224) // overlong encoding bytes
                 {
@@ -129,7 +129,7 @@ export function decodeUtf8(utf8Array)
                     {
                         error = 1;
                         decodedChar = String.fromCodePoint(65533);
-                        secondChar = utfChar[2];
+                        secondChar = utf8Char[2];
                     }
                     else if (utf8Char[2] < 192) // continuation bytes
                     {
@@ -157,7 +157,7 @@ export function decodeUtf8(utf8Array)
                 {
                     error = 1;
                     decodedChar = String.fromCodePoint(65533);
-                    secondChar = utfChar[1];
+                    secondChar = utf8Char[1];
                 }
                 else if (utf8Char[1] < 144 && utf8Char[0] == 240) // overlong encoding bytes
                 {
@@ -170,7 +170,7 @@ export function decodeUtf8(utf8Array)
                     {
                         error = 1;
                         decodedChar = String.fromCodePoint(65533);
-                        secondChar = utfChar[2];
+                        secondChar = utf8Char[2];
                     }
                     else if (utf8Char[2] < 192) // continuation bytes
                     {
@@ -179,7 +179,7 @@ export function decodeUtf8(utf8Array)
                         {
                             error = 1;
                             decodedChar = String.fromCodePoint(65533);
-                            secondChar = utfChar[3];
+                            secondChar = utf8Char[3];
                         }
                         else if (utf8Char[3] < 192) // continuation bytes
                         {
