@@ -46,8 +46,16 @@ export class Preset extends BasicPreset
                 xdtaChunk.chunkData.currentIndex += 20;
             }
 
-            this.presetName = decodeUtf8(presetNameArray)
+            
+            if (decodeUtf8(presetNameArray))
+            {
+                this.presetName = decodeUtf8(presetNameArray)
                 .replace(/\d{3}:\d{3}/, ""); // remove those pesky "000:001"
+            }
+            else
+            {
+                this.presetName = "Undefined";
+            }
             
             this.program = readLittleEndian(presetChunk.chunkData, 2);
             if (useXdta)
@@ -111,9 +119,10 @@ export class Preset extends BasicPreset
  * @param parent {BasicSoundBank}
  * @param useXdta {boolean}
  * @param xdtaChunk {RiffChunk}
+ * @param shadowPresets {boolean}
  * @returns {Preset[]}
  */
-export function readPresets(presetChunk, parent, useXdta = false, xdtaChunk = undefined)
+export function readPresets(presetChunk, parent, useXdta = false, xdtaChunk = undefined, shadowPresets = true)
 {
     /**
      * @type {Preset[]}
@@ -140,7 +149,6 @@ export function readPresets(presetChunk, parent, useXdta = false, xdtaChunk = un
 
     while (presetChunk.chunkData.length > presetChunk.chunkData.currentIndex)
     {
-        console.log(presetChunk.chunkData.currentIndex);
         let preset = new Preset(presetChunk, parent, false, xdtaValid, xdtaChunk);
         if (presets.length > 0)
         {
@@ -149,7 +157,7 @@ export function readPresets(presetChunk, parent, useXdta = false, xdtaChunk = un
         }
         presets.push(preset);
         // console.log(preset);
-        if (parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024) // Must be SF2 and not an XG (or GM2) MSB.
+        if ((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024) && (shadowPresets)) // Must be SF2 and not an XG (or GM2) MSB.
         {
             if (isValidXGMSB(preset.bank) == false && preset.bank !== 0)
             {
@@ -165,12 +173,12 @@ export function readPresets(presetChunk, parent, useXdta = false, xdtaChunk = un
     }
     // remove EOP
     presets.pop();
-    if (((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024)) && presets[presets.length - 1].presetName == "EOP") // Must be SF2 and not an XG (or GM2) MSB.
+    if ((((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024)) && presets[presets.length - 1].presetName == "EOP") && (shadowPresets)) // Must be SF2 and not an XG (or GM2) MSB.
     {
         presets.pop(); // eop is copied and then removed (in the rare edge case that bank of eop is non-zero)
     }
 
-    if (parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024) // Must be SF2 and not an XG (or GM2) MSB.
+    if ((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024) && (shadowPresets)) // Must be SF2 and not an XG (or GM2) MSB.
     {
         let msb127Found = false;
         let msb120Found = false;
@@ -219,7 +227,7 @@ export function readPresets(presetChunk, parent, useXdta = false, xdtaChunk = un
         }
     }
 
-    if (((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024)) && presets[presets.length - 1].presetName == "EOP") // Must be SF2 and not an XG (or GM2) MSB.
+    if ((((parent.soundFontInfo["ifil.wMajor"] < 2 || parent.soundFontInfo["ifil.wMinor"] < 1024)) && presets[presets.length - 1].presetName == "EOP") && (shadowPresets)) // Must be SF2 and not an XG (or GM2) MSB.
     {
         presets.pop(); // eop is copied and then removed (in the rare edge case that bank of eop is non-zero)
     }
