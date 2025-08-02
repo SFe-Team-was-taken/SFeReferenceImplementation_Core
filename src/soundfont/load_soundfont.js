@@ -6,9 +6,10 @@ import { SoundFont2 } from "./read_sf2/soundfont.js";
 /**
  * Loads a soundfont or dls file
  * @param buffer {ArrayBuffer} the binary file to load
+ * @param presetShadowing {boolean} enable preset shadowing
  * @returns {BasicSoundBank}
  */
-export function loadSoundFont(buffer)
+export function loadSoundFont(buffer, presetShadowing = true)
 {
     const check = buffer.slice(8, 12);
     const a = new IndexedByteArray(check);
@@ -17,5 +18,5 @@ export function loadSoundFont(buffer)
     {
         return new DLSSoundFont(buffer);
     }
-    return new SoundFont2(buffer, false);
+    return new SoundFont2(buffer, false, presetShadowing);
 }

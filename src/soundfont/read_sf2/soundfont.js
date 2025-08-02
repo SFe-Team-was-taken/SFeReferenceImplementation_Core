@@ -39,8 +39,9 @@ export class SoundFont2 extends BasicSoundBank
      * Initializes a new SoundFont2 Parser and parses the given data array
      * @param arrayBuffer {ArrayBuffer}
      * @param warnDeprecated {boolean}
+     * @param presetShadowing {boolean}
      */
-    constructor(arrayBuffer, warnDeprecated = true)
+    constructor(arrayBuffer, warnDeprecated = true, presetShadowing = true)
     {
         super();
         if (warnDeprecated)
@@ -878,11 +879,11 @@ export class SoundFont2 extends BasicSoundBank
         let presets;
         if (isExtended)
         {
-            presets = readPresets(phdrChunk, this, true, xChunks.phdr);
+            presets = readPresets(phdrChunk, this, true, xChunks.phdr, presetShadowing);
         }
         else
         {
-            presets = readPresets(phdrChunk, this, false, undefined);
+            presets = readPresets(phdrChunk, this, false, undefined, presetShadowing);
         }
 
         
