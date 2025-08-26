@@ -1,5 +1,5 @@
 import { getEvent } from "../midi/midi_message";
-import { resetArray } from "../synthesizer/audio_engine/engine_components/controller_tables";
+import { defaultMIDIControllerValues } from "../synthesizer/audio_engine/engine_components/controller_tables";
 import { nonResettableCCs } from "../synthesizer/audio_engine/engine_methods/controller_control/reset_controllers";
 import {
     type MIDIController,
@@ -10,7 +10,7 @@ import type { SpessaSynthSequencer } from "./sequencer";
 import type { MIDITrack } from "../midi/midi_track";
 
 // An array with preset default values
-const defaultControllerArray = resetArray.slice(0, 128);
+const defaultControllerArray = defaultMIDIControllerValues.slice(0, 128);
 
 /**
  * Plays the MIDI file to a specific time or ticks.
@@ -44,7 +44,7 @@ export function setTimeToInternal(
     /**
      * Save pitch bends here and send them only after
      */
-    const pitchBends = Array<number>(channelsToSave).fill(8192);
+    const pitchWheels = Array<number>(channelsToSave).fill(8192);
 
     /**
      * Save programs here and send them only after
@@ -62,14 +62,14 @@ export function setTimeToInternal(
     const isCCNonSkippable = (cc: MIDIController) =>
         cc === midiControllers.dataDecrement ||
         cc === midiControllers.dataIncrement ||
-        cc === midiControllers.dataEntryMsb ||
-        cc === midiControllers.lsbForControl6DataEntry ||
-        cc === midiControllers.RPNLsb ||
-        cc === midiControllers.RPNMsb ||
-        cc === midiControllers.NRPNLsb ||
-        cc === midiControllers.NRPNMsb ||
+        cc === midiControllers.dataEntryMSB ||
+        cc === midiControllers.dataEntryLSB ||
+        cc === midiControllers.registeredParameterLSB ||
+        cc === midiControllers.registeredParameterMSB ||
+        cc === midiControllers.nonRegisteredParameterLSB ||
+        cc === midiControllers.nonRegisteredParameterMSB ||
         cc === midiControllers.bankSelect ||
-        cc === midiControllers.lsbForControl0BankSelect ||
+        cc === midiControllers.bankSelectLSB ||
         cc === midiControllers.resetAllControllers;
 
     /**
@@ -88,7 +88,7 @@ export function setTimeToInternal(
      */
     function resetAllControllers(chan: number) {
         // Reset pitch bend
-        pitchBends[chan] = 8192;
+        pitchWheels[chan] = 8192;
         if (savedControllers?.[chan] === undefined) {
             return;
         }
@@ -137,8 +137,8 @@ export function setTimeToInternal(
                 break;
 
             // Skip pitch bend
-            case midiMessageTypes.pitchBend:
-                pitchBends[channel] = (event.data[1] << 7) | event.data[0];
+            case midiMessageTypes.pitchWheel:
+                pitchWheels[channel] = (event.data[1] << 7) | event.data[0];
                 break;
 
             case midiMessageTypes.programChange: {
@@ -218,11 +218,11 @@ export function setTimeToInternal(
             channelNumber++
         ) {
             // Restore pitch bends
-            if (pitchBends[channelNumber] !== undefined) {
+            if (pitchWheels[channelNumber] !== undefined) {
                 this.sendMIDIPitchWheel(
                     channelNumber,
-                    pitchBends[channelNumber] >> 7,
-                    pitchBends[channelNumber] & 0x7f
+                    pitchWheels[channelNumber] >> 7,
+                    pitchWheels[channelNumber] & 0x7f
                 );
             }
             if (savedControllers[channelNumber] !== undefined) {
@@ -261,8 +261,11 @@ export function setTimeToInternal(
             channelNumber++
         ) {
             // Restore pitch bends
-            if (pitchBends[channelNumber] !== undefined) {
-                this.synth.pitchWheel(channelNumber, pitchBends[channelNumber]);
+            if (pitchWheels[channelNumber] !== undefined) {
+                this.synth.pitchWheel(
+                    channelNumber,
+                    pitchWheels[channelNumber]
+                );
             }
             if (savedControllers[channelNumber] !== undefined) {
                 // Every controller that has changed

@@ -16,17 +16,20 @@ import type {
     MIDIFormat,
     MIDILoop,
     NoteTime,
+    RMIDInfoData,
     RMIDIWriteOptions,
     TempoChange
 } from "./types";
 import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_editor";
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
-import { SoundBankManager } from "../synthesizer/audio_engine/engine_components/sound_bank_manager";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
-import { midiMessageTypes, rmidInfoChunks, type RMIDInfoFourCC } from "./enums";
+import { midiMessageTypes } from "./enums";
 import type { KeyRange } from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
+import { parseDateString } from "../utils/load_date";
+import type { BasicPreset } from "../soundbank/basic_soundbank/basic_preset";
+import type { SoundBankManager } from "../synthesizer/audio_engine/engine_components/sound_bank_manager";
 
 /**
  * BasicMIDI is the base of a complete MIDI file.
@@ -55,6 +58,7 @@ export class BasicMIDI {
 
     /**
      * Any extra metadata found in the file.
+     * These messages were deemed "interesting" by the parsing algorithm
      */
     public extraMetadata: MIDIMessage[] = [];
 
@@ -89,22 +93,9 @@ export class BasicMIDI {
     public loop: MIDILoop = { start: 0, end: 0 };
 
     /**
-     * The name of the MIDI sequence.
-     * It will be empty if no name is found.
-     */
-    public name = "";
-
-    /**
      * The file name of the MIDI sequence, if provided during parsing.
      */
     public fileName?: string;
-
-    /**
-     * The raw, encoded MIDI name, represented as a Uint8Array.
-     * Useful when the MIDI file uses a different code page.
-     * Undefined if no MIDI name could be found.
-     */
-    public rawName?: Uint8Array;
 
     /**
      * The format of the MIDI file, which can be 0, 1, or 2, indicating the type of the MIDI file.
@@ -117,7 +108,9 @@ export class BasicMIDI {
      * Chunk type (e.g. "INAM"): Chunk data as a binary array.
      * Note that text chunks contain a terminal zero byte.
      */
-    public rmidiInfo: Partial<Record<RMIDInfoFourCC, IndexedByteArray>> = {};
+    public rmidiInfo: Partial<
+        Record<keyof RMIDInfoData, Uint8Array<ArrayBuffer>>
+    > = {};
 
     /**
      * The bank offset used for RMID files.
@@ -134,26 +127,35 @@ export class BasicMIDI {
      * Indicates if this file is a Multi-Port MIDI file.
      */
     public isMultiPort = false;
+
     /**
      * If the MIDI file is a DLS RMIDI file.
      */
     public isDLSRMIDI = false;
+
     /**
      * The embedded sound bank in the MIDI file, represented as an ArrayBuffer, if available.
      */
     public embeddedSoundBank?: ArrayBuffer;
 
     /**
-     * The encoding of the MIDI file, if specified.
+     * The raw, encoded MIDI name, represented as a Uint8Array.
+     * Useful when the MIDI file uses a different code page.
+     * Undefined if no MIDI name could be found.
      */
-    public get encoding() {
-        const encodingInfo = this.rmidiInfo[rmidInfoChunks.encoding];
+    protected binaryName?: Uint8Array;
+
+    /**
+     * The encoding of the RMIDI info in file, if specified.
+     */
+    public get infoEncoding() {
+        const encodingInfo = this.rmidiInfo.infoEncoding;
         if (!encodingInfo) {
             return undefined;
         }
-        let lengthToRead = encodingInfo.length;
+        let lengthToRead = encodingInfo.byteLength;
         // Some files don't have a terminal zero
-        if (encodingInfo[encodingInfo.length - 1] === 0) {
+        if (encodingInfo[encodingInfo.byteLength - 1] === 0) {
             lengthToRead--;
         }
         return readBinaryString(encodingInfo, lengthToRead);
@@ -174,17 +176,39 @@ export class BasicMIDI {
     }
 
     /**
+     * Loads a MIDI file (SMF, RMIDI, XMF) from a given file.
+     * @param file The file to load.
+     */
+    public static async fromFile(file: File) {
+        const mid = new BasicMIDI();
+        loadMIDIFromArrayBufferInternal(
+            mid,
+            await file.arrayBuffer(),
+            file.name
+        );
+        return mid;
+    }
+
+    /**
      * Copies a MIDI.
      * @param mid The MIDI to copy.
      * @returns The copied MIDI.
      */
-    public static copyFrom(mid: BasicMIDI): BasicMIDI {
+    public static copyFrom(mid: BasicMIDI) {
         const m = new BasicMIDI();
-        m.copyMetadataFrom(mid);
-
-        m.embeddedSoundBank = mid?.embeddedSoundBank?.slice(0) ?? undefined; // Deep copy
-        m.tracks = mid.tracks.map((track) => MIDITrack.copyFrom(track)); // Deep copy of each track array
+        m.copyFrom(mid);
         return m;
+    }
+
+    /**
+     * Copies a MIDI.
+     * @param mid The MIDI to copy.
+     */
+    public copyFrom(mid: BasicMIDI) {
+        this.copyMetadataFrom(mid);
+
+        this.embeddedSoundBank = mid?.embeddedSoundBank?.slice(0) ?? undefined; // Deep copy
+        this.tracks = mid.tracks.map((track) => MIDITrack.copyFrom(track)); // Deep copy of each track array
     }
 
     /**
@@ -218,11 +242,11 @@ export class BasicMIDI {
     /**
      * Gets the used programs and keys for this MIDI file with a given sound bank.
      * @param soundbank the sound bank.
-     * @returns The output data is a key-value pair: "bank:program" -> Set<"key-velocity">
+     * @returns The output data is a key-value pair: preset -> Set<"key-velocity">
      */
     public getUsedProgramsAndKeys(
-        soundbank: SoundBankManager | BasicSoundBank
-    ): Record<string, Set<string>> {
+        soundbank: BasicSoundBank | SoundBankManager
+    ): Map<BasicPreset, Set<string>> {
         return getUsedProgramsAndKeys(this, soundbank);
     }
 
@@ -310,27 +334,76 @@ export class BasicMIDI {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Gets the MIDI's even if it's encoded.
+     * Gets the MIDI's decoded name.
      * @param encoding The encoding to use if the MIDI uses an extended code page.
      * @remarks
      * Do not call in audioWorkletGlobalScope as it uses TextDecoder.
-     * IENC overrides the provided encoding.
+     * RMIDI encoding overrides the provided encoding.
      */
     public getName(encoding = "Shift_JIS") {
         let rawName = "";
-        if (this.rawName) {
-            encoding = this.encoding ?? encoding;
+        const n = this.getRMIDInfo("name");
+        if (n) {
+            return n.trim();
+        }
+        if (this.binaryName) {
+            encoding = this.getRMIDInfo("midiEncoding") ?? encoding;
             try {
                 const decoder = new TextDecoder(encoding);
                 // Trim since "                                                                "
                 // Is not a valid name
                 // MIDI file with that name: th07_10.mid
-                rawName = decoder.decode(this.rawName).trim();
+                rawName = decoder.decode(this.binaryName).trim();
             } catch (e) {
                 SpessaSynthWarn(`Failed to decode MIDI name: ${e as string}`);
             }
         }
-        return rawName || this.name || this.fileName;
+        return rawName || this.fileName;
+    }
+
+    // noinspection JSUnusedGlobalSymbols
+    /**
+     * Gets the decoded extra metadata as text and removes any unneeded characters (such as "@T" for karaoke files)
+     * @param encoding The encoding to use if the MIDI uses an extended code page.
+     * @remarks
+     * Do not call in audioWorkletGlobalScope as it uses TextDecoder.
+     * RMIDI encoding overrides the provided encoding.
+     */
+    public getExtraMetadata(encoding = "Shift_JIS") {
+        encoding = this.infoEncoding ?? encoding;
+        const decoder = new TextDecoder(encoding);
+        return this.extraMetadata.map((d) => {
+            const decoded = decoder.decode(d.data);
+            return decoded.replace(/@T|@A/g, "").trim();
+        });
+    }
+
+    /**
+     * Sets a given RMIDI info value.
+     * @param infoType The type to set.
+     * @param infoData The value to set it to.
+     * @remarks
+     * This sets the Info encoding to utf-8.
+     */
+    public setRMIDInfo<K extends keyof RMIDInfoData>(
+        infoType: K,
+        infoData: RMIDInfoData[K]
+    ) {
+        this.rmidiInfo.infoEncoding = getStringBytes("utf-8", true);
+        if (infoType === "picture") {
+            // TS2339: Property buffer does not exist on type string | ArrayBuffer | Date
+            // Property buffer does not exist on type string
+            this.rmidiInfo.picture = new Uint8Array(infoData as ArrayBuffer);
+        } else if (infoType === "creationDate") {
+            this.rmidiInfo.creationDate = getStringBytes(
+                (infoData as Date).toISOString(),
+                true
+            );
+        } else {
+            const encoded = new TextEncoder().encode(infoData as string);
+            // Add zero byte
+            this.rmidiInfo[infoType] = new Uint8Array([...encoded, 0]);
+        }
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -339,15 +412,30 @@ export class BasicMIDI {
      * @param infoType The metadata type.
      * @returns the text or undefined.
      */
-    public getRMIDInfo(infoType: RMIDInfoFourCC) {
+    public getRMIDInfo<K extends keyof RMIDInfoData>(
+        infoType: K
+    ): RMIDInfoData[K] | undefined {
         if (!this.rmidiInfo[infoType]) {
             return undefined;
         }
-        const encoding = this.encoding ?? "UTF-8";
+        const encoding = this.infoEncoding ?? "UTF-8";
+
+        if (infoType === "picture") {
+            return this.rmidiInfo[infoType].buffer as RMIDInfoData[K];
+        } else if (infoType === "creationDate") {
+            return parseDateString(
+                readBinaryString(this.rmidiInfo[infoType])
+            ) as RMIDInfoData[K];
+        }
 
         try {
             const decoder = new TextDecoder(encoding);
-            return decoder.decode(this.rmidiInfo[infoType].buffer).trim();
+            let infoBuffer = this.rmidiInfo[infoType];
+            if (infoBuffer[infoBuffer.length - 1] === 0) {
+                // Do not decode the terminal byte
+                infoBuffer = infoBuffer?.slice(0, infoBuffer.length - 1);
+            }
+            return decoder.decode(infoBuffer.buffer).trim() as RMIDInfoData[K];
         } catch (e) {
             SpessaSynthWarn(
                 `Failed to decode ${infoType} name: ${e as string}`
@@ -361,7 +449,6 @@ export class BasicMIDI {
      */
     protected copyMetadataFrom(mid: BasicMIDI) {
         // Properties can be assigned
-        this.name = mid.name;
         this.fileName = mid.fileName;
         this.timeDivision = mid.timeDivision;
         this.duration = mid.duration;
@@ -376,6 +463,14 @@ export class BasicMIDI {
 
         // Copying arrays
         this.tempoChanges = [...mid.tempoChanges];
+        this.extraMetadata = mid.extraMetadata.map(
+            (m) =>
+                new MIDIMessage(
+                    m.ticks,
+                    m.statusByte,
+                    new IndexedByteArray(m.data)
+                )
+        );
         this.lyrics = mid.lyrics.map(
             (arr) =>
                 new MIDIMessage(
@@ -385,15 +480,17 @@ export class BasicMIDI {
                 )
         );
         this.portChannelOffsetMap = [...mid.portChannelOffsetMap];
-        this.rawName = mid?.rawName?.slice();
+        this.binaryName = mid?.binaryName?.slice();
 
         // Copying objects
         this.loop = { ...mid.loop };
         this.keyRange = { ...mid.keyRange };
         this.rmidiInfo = {};
-        for (const [key, value] of Object.entries(mid.rmidiInfo)) {
-            this.rmidiInfo[key as RMIDInfoFourCC] = value?.slice();
-        }
+        Object.entries(mid.rmidiInfo).forEach((v) => {
+            const key = v[0];
+            const value = v[1];
+            this.rmidiInfo[key as keyof RMIDInfoData] = value.slice();
+        });
     }
 
     /**
@@ -412,10 +509,9 @@ export class BasicMIDI {
         this.extraMetadata = [];
 
         let nameDetected = false;
-        if (typeof this.rmidiInfo.INAM !== "undefined") {
-            // Same as with copyright
+        if (typeof this.rmidiInfo.name !== "undefined") {
+            // Name is already provided in RMIDInfo
             nameDetected = true;
-            this.rawName = this.rmidiInfo.INAM;
         }
 
         // Loop tracking
@@ -583,7 +679,7 @@ export class BasicMIDI {
                                 checkedText.startsWith("@A")
                             ) {
                                 if (!karaokeHasTitle) {
-                                    this.name = checkedText.substring(2).trim();
+                                    this.binaryName = e.data.slice(2);
                                     karaokeHasTitle = true;
                                     nameDetected = true;
                                 } else {
@@ -748,13 +844,7 @@ export class BasicMIDI {
                             message.statusByte === midiMessageTypes.trackName
                     );
                     if (name) {
-                        this.rawName = name.data;
-                        this.name = readBinaryString(
-                            name.data,
-                            name.data.length,
-                            0,
-                            false
-                        );
+                        this.binaryName = name.data;
                     }
                 }
             } else {
@@ -764,13 +854,7 @@ export class BasicMIDI {
                         message.statusByte === midiMessageTypes.trackName
                 );
                 if (name) {
-                    this.rawName = name.data;
-                    this.name = readBinaryString(
-                        name.data,
-                        name.data.length,
-                        0,
-                        false
-                    );
+                    this.binaryName = name.data;
                 }
             }
         }
@@ -779,27 +863,17 @@ export class BasicMIDI {
             (c) => c.data.length > 0
         );
 
-        this.name = this.name.trim();
-        // If name is "", use the file name
-        if (this.name.length === 0) {
-            SpessaSynthInfo(`%cNo name detected.`, consoleColors.unrecognized);
-            this.name = "";
-        } else {
-            SpessaSynthInfo(
-                `%cMIDI Name detected! %c"${this.name}"`,
-                consoleColors.info,
-                consoleColors.recognized
-            );
-        }
+        // Sort lyrics (https://github.com/spessasus/spessasynth_core/issues/10)
+        this.lyrics.sort((a, b) => a.ticks - b.ticks);
 
         // If the first event is not at 0 ticks, add a track name
         // https://github.com/spessasus/SpessaSynth/issues/145
         if (!this.tracks.some((t) => t.events[0].ticks === 0)) {
             const track = this.tracks[0];
             // Can copy
-            let b = this?.rawName?.buffer as ArrayBuffer;
+            let b = this?.binaryName?.buffer as ArrayBuffer;
             if (!b) {
-                b = getStringBytes(this.name).buffer;
+                b = new Uint8Array(0).buffer;
             }
             track.events.unshift(
                 new MIDIMessage(
@@ -812,8 +886,8 @@ export class BasicMIDI {
         this.duration = this.midiTicksToSeconds(this.lastVoiceEventTick);
 
         // Invalidate raw name if empty
-        if (this.rawName && this.rawName.length < 1) {
-            this.rawName = undefined;
+        if (this.binaryName && this.binaryName.length < 1) {
+            this.binaryName = undefined;
         }
 
         SpessaSynthInfo("%cSuccess!", consoleColors.recognized);

@@ -478,7 +478,7 @@ export class SpessaSynthSequencer {
         if (!this.externalMIDIPlayback) {
             return;
         }
-        this.sendMIDIMessage([midiMessageTypes.pitchBend | channel, LSB, MSB]);
+        this.sendMIDIMessage([midiMessageTypes.pitchWheel | channel, LSB, MSB]);
     }
 
     /**

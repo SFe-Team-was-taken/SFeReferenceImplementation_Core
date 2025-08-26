@@ -2,9 +2,9 @@ import { consoleColors } from "../../../../utils/other";
 import { SpessaSynthInfo } from "../../../../utils/loggin";
 import {
     customResetArray,
+    defaultMIDIControllerValues,
     NON_CC_INDEX_OFFSET,
-    PORTAMENTO_CONTROL_UNSET,
-    resetArray
+    PORTAMENTO_CONTROL_UNSET
 } from "../../engine_components/controller_tables";
 import { DEFAULT_PERCUSSION, DEFAULT_SYNTH_MODE } from "../../engine_components/synth_constants";
 import { getDefaultBank } from "../../../../utils/xg_hacks";
@@ -28,6 +28,9 @@ export function resetAllControllersInternal(
     }
     this.privateProps.callEvent("allControllerReset", undefined);
     this.setMasterParameter("midiSystem", DEFAULT_SYNTH_MODE);
+    if (!this.privateProps.drumPreset || !this.privateProps.defaultPreset) {
+        return;
+    }
     for (
         let channelNumber = 0;
         channelNumber < this.midiChannels.length;
@@ -35,48 +38,9 @@ export function resetAllControllersInternal(
     ) {
         const ch: MIDIChannel = this.midiChannels[channelNumber];
 
-        ch.resetControllers();
-        // If preset is unlocked, switch to non-drums and call event
-        if (
-            !ch.lockPreset &&
-            this.privateProps.drumPreset &&
-            this.privateProps.defaultPreset
-        ) {
-            ch.setBankSelect(
-                getDefaultBank(this.privateProps.masterParameters.midiSystem)
-            );
-            if (channelNumber % 16 === DEFAULT_PERCUSSION) {
-                ch.setPreset(this.privateProps.drumPreset);
-                ch.drumChannel = true;
-                this.privateProps.callEvent("drumChange", {
-                    channel: channelNumber,
-                    isDrumChannel: true
-                });
-            } else {
-                ch.drumChannel = false;
-                ch.setPreset(this.privateProps.defaultPreset);
-                this.privateProps.callEvent("drumChange", {
-                    channel: channelNumber,
-                    isDrumChannel: false
-                });
-            }
-        } else {
-            this.privateProps.callEvent("drumChange", {
-                channel: channelNumber,
-                isDrumChannel: ch.drumChannel
-            });
-        }
-        // Safety net
-        if (!ch.preset) {
-            continue;
-        }
-        const presetBank = ch.preset?.bank;
-        // Call program change
-        this.privateProps.callEvent("programChange", {
-            channel: channelNumber,
-            program: ch.preset?.program,
-            bank: presetBank
-        });
+        // Do not send CC changes as we call allControllerReset
+        ch.resetControllers(false);
+        ch.resetPreset();
 
         for (let ccNum = 0; ccNum < 128; ccNum++) {
             if (this.midiChannels[channelNumber].lockedControllers[ccNum]) {
@@ -138,27 +102,31 @@ export function resetAllControllersInternal(
  * This will reset all controllers to their default values,
  * except for the locked controllers.
  */
-export function resetControllers(this: MIDIChannel) {
+export function resetControllers(this: MIDIChannel, sendCCEvents = true) {
     this.channelOctaveTuning.fill(0);
 
     // Reset the array
-    for (let i = 0; i < resetArray.length; i++) {
+    for (let i = 0; i < defaultMIDIControllerValues.length; i++) {
         if (this.lockedControllers[i]) {
             continue;
         }
-        const resetValue = resetArray[i];
+        const resetValue = defaultMIDIControllerValues[i];
         if (this.midiControllers[i] !== resetValue && i < 127) {
             if (i === midiControllers.portamentoControl) {
                 this.midiControllers[i] = PORTAMENTO_CONTROL_UNSET;
             } else if (
                 i !== midiControllers.portamentoControl &&
-                i !== midiControllers.dataEntryMsb &&
-                i !== midiControllers.RPNMsb &&
-                i !== midiControllers.RPNLsb &&
-                i !== midiControllers.NRPNMsb &&
-                i !== midiControllers.NRPNLsb
+                i !== midiControllers.dataEntryMSB &&
+                i !== midiControllers.registeredParameterMSB &&
+                i !== midiControllers.registeredParameterLSB &&
+                i !== midiControllers.nonRegisteredParameterMSB &&
+                i !== midiControllers.nonRegisteredParameterLSB
             ) {
-                this.controllerChange(i as MIDIController, resetValue >> 7);
+                this.controllerChange(
+                    i as MIDIController,
+                    resetValue >> 7,
+                    sendCCEvents
+                );
             }
         } else {
             // Out of range, do a regular reset
@@ -166,7 +134,6 @@ export function resetControllers(this: MIDIChannel) {
         }
     }
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
-    this.holdPedal = false;
     this.randomPan = false;
 
     this.sysExModulators.resetModulators();
@@ -180,13 +147,28 @@ export function resetControllers(this: MIDIChannel) {
     this.resetParameters();
 }
 
+export function resetPreset(this: MIDIChannel) {
+    this.patch = {
+        bankMSB: getDefaultBank(this.channelSystem),
+        bankLSB: 0,
+        isGMGSDrum: false,
+        program: 0
+    };
+
+    this.drumChannel = false;
+    if (this.channelNumber % 16 === DEFAULT_PERCUSSION) {
+        this.setDrums(true);
+    }
+    this.programChange(0);
+}
+
 export const nonResettableCCs = new Set<MIDIController>([
     midiControllers.bankSelect,
-    midiControllers.lsbForControl0BankSelect,
+    midiControllers.bankSelectLSB,
     midiControllers.mainVolume,
-    midiControllers.lsbForControl7MainVolume,
+    midiControllers.mainVolumeLSB,
     midiControllers.pan,
-    midiControllers.lsbForControl10Pan,
+    midiControllers.panLSB,
     midiControllers.reverbDepth,
     midiControllers.tremoloDepth,
     midiControllers.chorusDepth,
@@ -218,7 +200,7 @@ export function resetControllersRP15Compliant(this: MIDIChannel) {
     this.channelVibrato = { rate: 0, depth: 0, delay: 0 };
 
     for (let i = 0; i < 128; i++) {
-        const resetValue = resetArray[i];
+        const resetValue = defaultMIDIControllerValues[i];
         if (
             !nonResettableCCs.has(i as MIDIController) &&
             resetValue !== this.midiControllers[i]
@@ -244,10 +226,10 @@ export function resetParameters(this: MIDIChannel) {
      * Reset the state machine to idle
      */
     this.dataEntryState = dataEntryStates.Idle;
-    this.midiControllers[midiControllers.NRPNLsb] = 127 << 7;
-    this.midiControllers[midiControllers.NRPNMsb] = 127 << 7;
-    this.midiControllers[midiControllers.RPNLsb] = 127 << 7;
-    this.midiControllers[midiControllers.RPNMsb] = 127 << 7;
+    this.midiControllers[midiControllers.nonRegisteredParameterLSB] = 127 << 7;
+    this.midiControllers[midiControllers.nonRegisteredParameterMSB] = 127 << 7;
+    this.midiControllers[midiControllers.registeredParameterLSB] = 127 << 7;
+    this.midiControllers[midiControllers.registeredParameterMSB] = 127 << 7;
     this.resetGeneratorOverrides();
     this.resetGeneratorOffsets();
 }

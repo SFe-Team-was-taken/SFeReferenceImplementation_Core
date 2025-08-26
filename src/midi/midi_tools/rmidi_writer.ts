@@ -10,7 +10,7 @@ import {
 import { consoleColors } from "../../utils/other";
 import { writeLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
-import { chooseBank, isSystemXG, parseBankSelect } from "../../utils/xg_hacks";
+import { isSystemXG } from "../../utils/xg_hacks";
 import {
     isGM2On,
     isGMOn,
@@ -21,16 +21,18 @@ import {
 import {
     midiControllers,
     type MIDIMessageType,
-    midiMessageTypes,
-    rmidInfoChunks
+    midiMessageTypes
 } from "../enums";
 import type { BasicSoundBank } from "../../soundbank/basic_soundbank/basic_soundbank";
-import type { RMIDIWriteOptions } from "../types";
+import type { RMIDInfoData, RMIDInfoFourCC, RMIDIWriteOptions } from "../types";
 import type { BasicMIDI } from "../basic_midi";
 import { getGsOn } from "./get_gs_on";
 import type { SynthSystem } from "../../synthesizer/types";
+import {
+    type MIDIPatch,
+    MIDIPatchTools
+} from "../../soundbank/basic_soundbank/midi_patch";
 
-const FORCED_ENCODING = "utf-8";
 const DEFAULT_COPYRIGHT = "Created using SpessaSynth";
 
 function correctBankOffsetInternal(
@@ -143,148 +145,54 @@ function correctBankOffsetInternal(
 
         // Program change
         const chNum = (e.statusByte & 0xf) + portOffset;
-        const channel: {
-            program: number;
-            drums: boolean;
-            lastBank?: MIDIMessage;
-            lastBankLSB?: MIDIMessage;
-            hasBankSelect: boolean;
-        } = channelsInfo[chNum];
+        const channel = channelsInfo[chNum];
         if (status === midiMessageTypes.programChange) {
-            const isXG = isSystemXG(system);
-            // Check if the preset for this program exists
-            const initialProgram = e.data[0];
-            if (channel.drums) {
-                if (
-                    soundBank.presets.findIndex(
-                        (p) =>
-                            p.program === initialProgram &&
-                            p.isDrumPreset(isXG, true)
-                    ) === -1
-                ) {
-                    // Doesn't exist. pick any preset that has bank 128.
-                    e.data[0] =
-                        soundBank.presets.find((p) => p.isDrumPreset(isXG))
-                            ?.program ?? 0;
-                    SpessaSynthInfo(
-                        `%cNo drum preset %c${initialProgram}%c. Channel %c${chNum}%c. Changing program to ${e.data[0]}.`,
-                        consoleColors.info,
-                        consoleColors.unrecognized,
-                        consoleColors.info,
-                        consoleColors.recognized,
-                        consoleColors.info
-                    );
-                }
-            } else {
-                if (
-                    soundBank.presets.findIndex(
-                        (p) =>
-                            p.program === initialProgram &&
-                            !p.isDrumPreset(isXG)
-                    ) === -1
-                ) {
-                    // Doesn't exist. pick any preset that does not have bank 128.
-                    e.data[0] =
-                        soundBank.presets.find((p) => !p.isDrumPreset(isXG))
-                            ?.program ?? 0;
-                    SpessaSynthInfo(
-                        `%cNo preset %c${initialProgram}%c. Channel %c${chNum}%c. Changing program to ${e.data[0]}.`,
-                        consoleColors.info,
-                        consoleColors.unrecognized,
-                        consoleColors.info,
-                        consoleColors.recognized,
-                        consoleColors.info
-                    );
-                }
-            }
-            channel.program = e.data[0];
-            // Check if this preset exists for program and bank
+            const sentProgram = e.data[0];
+            const patch: MIDIPatch = {
+                program: sentProgram,
+                bankLSB: channel.lastBankLSB?.data?.[1] ?? 0,
+                // Make sure to take bank offset into account
+                bankMSB: Math.max(
+                    channel.lastBank?.data?.[1] ?? 0 - mid.bankOffset,
+                    0
+                ),
+                isGMGSDrum: channel.drums
+            };
+            const targetPreset = soundBank.getPreset(patch, system);
+            SpessaSynthInfo(
+                `%cInput patch: %c${MIDIPatchTools.toMIDIString(patch)}%c. Channel %c${chNum}%c. Changing patch to ${targetPreset.toString()}.`,
+                consoleColors.info,
+                consoleColors.unrecognized,
+                consoleColors.info,
+                consoleColors.recognized,
+                consoleColors.info
+            );
+            // Set the program number
+            e.data[0] = targetPreset.program;
+
             if (channel.lastBank === undefined) {
                 continue;
             }
-            const realBank = Math.max(
-                0,
-                channel.lastBank.data[1] - mid.bankOffset
-            ); // Make sure to take the previous bank offset into account
-            const bankLSB = channel?.lastBankLSB
-                ? channel.lastBankLSB.data[1] - mid.bankOffset
-                : 0;
-            // Adjust bank for XG
-            let bank = chooseBank(realBank, bankLSB, channel.drums, isXG);
-            if (
-                soundBank.presets.findIndex(
-                    (p) => p.bank === bank && p.program === e.data[0]
-                ) === -1
-            ) {
-                // No preset with this bank. find this program with any bank
-                const found = soundBank.presets.find(
-                    (p) => p.program === e.data[0]
-                );
-                let targetBank = bankOffset;
-                if (found) {
-                    targetBank = bankOffset + found.bank;
-                }
-                channel.lastBank.data[1] = targetBank;
-                if (channel?.lastBankLSB?.data) {
-                    channel.lastBankLSB.data[1] = targetBank;
-                }
-                SpessaSynthInfo(
-                    `%cNo preset %c${bank}:${e.data[0]}%c. Channel %c${chNum}%c. Changing bank to ${targetBank}.`,
-                    consoleColors.info,
-                    consoleColors.unrecognized,
-                    consoleColors.info,
-                    consoleColors.recognized,
-                    consoleColors.info
-                );
-            } else {
-                // There is a preset with this bank. Add offset. For drums add the normal offset.
-                const drumBank = bank;
-                if (isSystemXG(system) && bank === 128) {
-                    bank = 127;
-                }
-                const newBank = (bank === 128 ? 128 : drumBank) + bankOffset;
-                channel.lastBank.data[1] = newBank;
-                if (channel?.lastBankLSB?.data && !channel.drums) {
-                    channel.lastBankLSB.data[1] =
-                        channel.lastBankLSB.data[1] -
-                        mid.bankOffset +
-                        bankOffset;
-                }
-                SpessaSynthInfo(
-                    `%cPreset %c${bank}:${e.data[0]}%c exists. Channel %c${chNum}%c.  Changing bank to ${newBank}.`,
-                    consoleColors.info,
-                    consoleColors.recognized,
-                    consoleColors.info,
-                    consoleColors.recognized,
-                    consoleColors.info
-                );
+            channel.lastBank.data[1] = Math.min(
+                targetPreset.bankMSB + bankOffset,
+                127
+            );
+            if (channel.lastBankLSB === undefined) {
+                continue;
             }
+            channel.lastBankLSB.data[1] = targetPreset.bankLSB;
             continue;
         }
 
         // Controller change
         // We only care about bank-selects
-        const isLSB = e.data[0] === midiControllers.lsbForControl0BankSelect;
+        const isLSB = e.data[0] === midiControllers.bankSelectLSB;
         if (e.data[0] !== midiControllers.bankSelect && !isLSB) {
             continue;
         }
         // Bank select
         channel.hasBankSelect = true;
-        const bankNumber = e.data[1];
         // Interpret
-        const interpretation = parseBankSelect(
-            channel?.lastBank?.data[1] ?? 0,
-            bankNumber,
-            system,
-            isLSB,
-            channel.drums,
-            chNum
-        );
-        if (interpretation.drumsStatus === 2) {
-            channel.drums = true;
-        } else if (interpretation.drumsStatus === 1) {
-            channel.drums = false;
-        }
         if (isLSB) {
             channel.lastBankLSB = e;
         } else {
@@ -327,7 +235,15 @@ function correctBankOffsetInternal(
                 return;
             }
             const programTicks = track.events[programIndex].ticks;
-            const targetProgram = soundBank.getPreset(0, 0).program;
+            const targetProgram = soundBank.getPreset(
+                {
+                    bankMSB: 0,
+                    bankLSB: 0,
+                    program: 0,
+                    isGMGSDrum: false
+                },
+                system
+            ).program;
             track.addEvent(
                 new MIDIMessage(
                     programTicks,
@@ -346,8 +262,15 @@ function correctBankOffsetInternal(
         );
         const ticks = track.events[indexToAdd].ticks;
         const targetBank =
-            soundBank.getPreset(0, has.program, isSystemXG(system))?.bank +
-                bankOffset || bankOffset;
+            soundBank.getPreset(
+                {
+                    bankLSB: 0,
+                    bankMSB: 0,
+                    program: has.program,
+                    isGMGSDrum: has.drums
+                },
+                system
+            )?.bankMSB + bankOffset || bankOffset;
         track.addEvent(
             new MIDIMessage(
                 ticks,
@@ -375,10 +298,7 @@ function correctBankOffsetInternal(
 
 export const DEFAULT_RMIDI_WRITE_OPTIONS: RMIDIWriteOptions = {
     bankOffset: 0,
-    encoding: "Shift_JIS",
-    metadata: {
-        midiEncoding: "Shift_JIS"
-    },
+    metadata: {},
     correctBankOffset: true,
     soundBank: undefined
 };
@@ -396,7 +316,6 @@ export function writeRMIDIInternal(
     options: RMIDIWriteOptions
 ): ArrayBuffer {
     const metadata = options.metadata;
-    let encoding = options.encoding;
     SpessaSynthGroup("%cWriting the RMIDI File...", consoleColors.info);
     SpessaSynthInfo("metadata", metadata);
     SpessaSynthInfo("Initial bank offset", mid.bankOffset);
@@ -410,166 +329,92 @@ export function writeRMIDIInternal(
     }
     const newMid = new IndexedByteArray(mid.writeMIDI());
 
+    // Apply metadata
+    metadata.name ??= mid.getName();
+    metadata.creationDate ??= new Date();
+    metadata.copyright ??= DEFAULT_COPYRIGHT;
+    metadata.software ??= "SpessaSynth";
+
+    Object.entries(metadata).forEach(
+        <K extends keyof RMIDInfoData>(v: unknown[]) => {
+            const val = v as [K, RMIDInfoData[K]];
+            if (val[1]) {
+                mid.setRMIDInfo(val[0], val[1]);
+            }
+        }
+    );
+
     // Info data for RMID
     const infoContent: Uint8Array[] = [];
-    const encoder = new TextEncoder();
-    // Software (SpessaSynth)
-    infoContent.push(
-        writeRIFFChunkRaw(
-            rmidInfoChunks.software,
-            encoder.encode("SpessaSynth"),
-            true
-        )
-    );
-    // Name
-    if (metadata.name) {
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.name,
-                encoder.encode(metadata.name),
-                true
-            )
-        );
-        encoding = FORCED_ENCODING;
-    } else {
-        if (mid.rawName) {
-            infoContent.push(
-                writeRIFFChunkRaw(rmidInfoChunks.name, mid.rawName, true)
-            );
-        } else {
-            const bytes = encoder.encode(mid.name);
-            infoContent.push(
-                writeRIFFChunkRaw(rmidInfoChunks.name, bytes, true)
-            );
+
+    Object.entries(mid.rmidiInfo).forEach((v) => {
+        const type = v[0] as keyof RMIDInfoData;
+        const data = v[1];
+        const writeInfo = (type: RMIDInfoFourCC) => {
+            infoContent.push(writeRIFFChunkRaw(type, data));
+        };
+        switch (type) {
+            case "album":
+                // Note that there are two album chunks: IPRD and IALB
+                // Spessasynth uses IPRD, but writes both
+                writeInfo("IALB");
+                writeInfo("IPRD");
+                break;
+
+            case "software":
+                writeInfo("ISFT");
+                break;
+
+            case "infoEncoding":
+                writeInfo("IENC");
+                break;
+
+            case "creationDate":
+                writeInfo("ICRD");
+                break;
+
+            case "picture":
+                writeInfo("IPIC");
+                break;
+
+            case "name":
+                writeInfo("INAM");
+                break;
+
+            case "artist":
+                writeInfo("IART");
+                break;
+
+            case "genre":
+                writeInfo("IGNR");
+                break;
+
+            case "copyright":
+                writeInfo("ICOP");
+                break;
+
+            case "comment":
+                writeInfo("ICMT");
+                break;
+
+            case "engineer":
+                writeInfo("IENG");
+                break;
+
+            case "subject":
+                writeInfo("ISBJ");
+                break;
+
+            case "midiEncoding":
+                writeInfo("MENC");
+                break;
         }
-    }
-    // Creation date
-    if (metadata.creationDate) {
-        encoding = FORCED_ENCODING;
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.creationDate,
-                encoder.encode(metadata.creationDate),
-                true
-            )
-        );
-    } else {
-        const today = new Date().toISOString();
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.creationDate,
-                getStringBytes(today, true),
-                true
-            )
-        );
-    }
-    // Comment
-    if (metadata.comment) {
-        encoding = FORCED_ENCODING;
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.comment,
-                encoder.encode(metadata.comment)
-            )
-        );
-    }
-    // Engineer
-    if (metadata.engineer) {
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.engineer,
-                encoder.encode(metadata.engineer),
-                true
-            )
-        );
-    }
-    // Album
-    if (metadata.album) {
-        // Note that there are two album chunks: IPRD and IALB
-        // Spessasynth uses IPRD, but writes both
-        encoding = FORCED_ENCODING;
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.album,
-                encoder.encode(metadata.album),
-                true
-            )
-        );
-        infoContent.push(
-            writeRIFFChunkRaw("IALB", encoder.encode(metadata.album), true)
-        );
-    }
-    // Artist
-    if (metadata.artist) {
-        encoding = FORCED_ENCODING;
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.artist,
-                encoder.encode(metadata.artist),
-                true
-            )
-        );
-    }
-    // Genre
-    if (metadata.genre) {
-        encoding = FORCED_ENCODING;
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.genre,
-                encoder.encode(metadata.genre),
-                true
-            )
-        );
-    }
-    // Picture
-    if (metadata.picture) {
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.picture,
-                new Uint8Array(metadata.picture)
-            )
-        );
-    }
-    // Copyright
-    if (metadata.copyright) {
-        encoding = FORCED_ENCODING;
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.copyright,
-                encoder.encode(metadata.copyright),
-                true
-            )
-        );
-    } else {
-        // Use midi copyright if possible
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.copyright,
-                mid.rmidiInfo.ICOP ?? getStringBytes(DEFAULT_COPYRIGHT, true)
-            )
-        );
-    }
+    });
 
     // Bank offset
     const DBNK = new IndexedByteArray(2);
     writeLittleEndianIndexed(DBNK, options.bankOffset, 2);
-    infoContent.push(writeRIFFChunkRaw(rmidInfoChunks.bankOffset, DBNK));
-    // Midi encoding
-    if (metadata.midiEncoding !== undefined) {
-        infoContent.push(
-            writeRIFFChunkRaw(
-                rmidInfoChunks.midiEncoding,
-                encoder.encode(metadata.midiEncoding)
-            )
-        );
-    }
-    // Encoding
-    infoContent.push(
-        writeRIFFChunkRaw(
-            rmidInfoChunks.encoding,
-            getStringBytes(encoding, true)
-        )
-    );
+    infoContent.push(writeRIFFChunkRaw("DBNK", DBNK));
 
     // Combine and write out
     SpessaSynthInfo("%cFinished!", consoleColors.info);

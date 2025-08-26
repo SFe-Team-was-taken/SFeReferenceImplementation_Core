@@ -17,6 +17,12 @@ This is done because spessasynth can load sound bank formats other than SoundFon
 
 ## MIDI
 
+
+### MIDI (Class)
+
+Removed, replaced by `BasicMIDI.fromArrayBuffer()`.
+Drop-in replacement.
+
 ### MIDISequenceData
 
 Removed, BasicMIDI now contains all data.
@@ -37,11 +43,20 @@ They behave in exactly the same way.
 
 
  - `embeddedSoundFont` -> `embeddedSoundBank`
- - `RMIDInfo` -> `rmidiInfo`
  - `MIDITicksToSeconds()` -> `midiTicksToSeconds()`
  - `modifyMIDI()` -> `modify()`
  - `midiPortChannelOffsets` -> `portChannelOffsetMap`
  - `applySnapshotToMIDI()` -> `applySnapshot()`
+
+####  RMIDInfo
+
+Renamed to `rmidiInfo`.
+
+Like `soundBankInfo`, the object's property names are no longer the fourCCs, but human-readable names.
+
+However, they still are stored as `Uint8Array`s due to possibly unknown encodings.
+
+Use `getRMIDInfo` or `setRMIDInfo` to get the decoded JS objects.
 
 #### writeRMIDI
 
@@ -55,16 +70,19 @@ Now returns `ArrayBuffer` instead of `Uint8Array`.
 
 #### midiName
 
-Renamed to `name`.
+Removed.
 
-If no name is found. It will no longer fall back to `fileName` but be empty instead.
+It was only decoded via `fromCharCode` (due to the requirement of AudioWorkletGlobalScope which does not have the TextDecoder),
+so it often resulted in broken names.
 
-To replicate the old behavior, consider `mid.name || mid.fileName`.
+`getName()` solves this issue and provides all the needed fallbacks (rawName, RMIDInfo and fileName). It's a direct replacement.
 
 #### copyright
 
 Removed in favor of `extraMetadata`. There isn't a consistent way to determine a copyright of a MIDI file as it's often stored in track names or markers.
 Extra metadata separates what copyright was: a stitched string of all meta events that were "interesting".
+
+Like with midiName, `getExtraMetadata()` decodes the text.
 
 #### tracks
 
@@ -89,11 +107,17 @@ Removed, replaced with `MIDITrack.channels`.
 
 #### rawMidiName
 
-Renamed to `rawName` and will now be undefined if a name is not found.
+Renamed to `binaryName` and will now be undefined if a name is not found.
+It is also protected. Use `getName` instead, which handles everything for you.
 
-### midiNameUsesFileName
+#### midiNameUsesFileName
 
-Removed. You can compare `name === fileName` or check if `rawName` is undefined.
+Removed. You can compare `getName() === fileName`.
+
+### MIDIBuilder
+
+Now takes an optional `options` object instead of separate option arguments.
+It also enforces correct MIDI formats 0 and 1.
 
 ## Enums
 
@@ -103,7 +127,7 @@ Enum renamed to `midiMessageTypes`.
 
 ### RMIDINFOChunks
 
-Enum renamed to `rmidInfoChunks`.
+Enum removed due to the `rmidInfo` object being reworked.
 
 
 ### interpolationTypes
@@ -116,11 +140,6 @@ Enum renamed to `rmidInfoChunks`.
 - `XGText` -> `yamahaXGText`
 - `SoundCanvasText` -> `soundCanvasText`
 - `SoundCanvasDotDisplay` - `soundCanvasDotMatrix`
-
-## MIDI (Class)
-
-Removed, replaced by `BasicMIDI.fromArrayBuffer()`.
-Drop-in replacement.
 
 
 ## BasicSoundBank
@@ -210,6 +229,7 @@ They behave in exactly the same way.
 - `midiAudioChannels` -> `midiChannels`
 - `createMidiChannel()` -> `createMIDIChannel()`
 
+
 ### pitchWheel
 
 Now takes a single `pitch` 14-bit value instead of the confusing `MSB` and `LSB` parameters. Same with the `pitchWheel` event.
@@ -220,6 +240,13 @@ Now takes a single `pitch` 14-bit value instead of the confusing `MSB` and `LSB`
 `onChannelPropertyChange` has been replaced with an event `channelPropertyChange`.
 
 `onEventCall` now takes a single object as an argument. This is done to help with TypeScript type narrowing in switch statements.
+
+The event names have been capitalized with camelCase. So, for example `noteon` becomes `noteOn`.
+
+`allControllerReset` event no longer calls CC changes to default values. This was never intended as they are redundant when this controller exists.
+The default reset values can be accessed via the `defaultMIDIControllerValues` export. Locked controllers still get restored.
+
+`stopAll` now specifies a channel number.
 
 ### Master parameters
 

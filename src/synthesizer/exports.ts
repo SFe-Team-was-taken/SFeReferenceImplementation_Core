@@ -7,7 +7,10 @@ import {
     ALL_CHANNELS_OR_DIFFERENT_ACTION,
     DEFAULT_PERCUSSION
 } from "./audio_engine/engine_components/synth_constants";
-import { NON_CC_INDEX_OFFSET } from "./audio_engine/engine_components/controller_tables";
+import {
+    defaultMIDIControllerValues,
+    NON_CC_INDEX_OFFSET
+} from "./audio_engine/engine_components/controller_tables";
 
 export * from "./types";
 export * from "./enums";
@@ -21,5 +24,6 @@ export {
     DEFAULT_PERCUSSION,
     DEFAULT_MASTER_PARAMETERS,
     ALL_CHANNELS_OR_DIFFERENT_ACTION,
-    NON_CC_INDEX_OFFSET
+    NON_CC_INDEX_OFFSET,
+    defaultMIDIControllerValues
 };

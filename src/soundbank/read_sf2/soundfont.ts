@@ -17,7 +17,8 @@ import { readZoneIndexes } from "./zones";
 import type { SF2InfoFourCC } from "../types";
 import type { Generator } from "../basic_soundbank/generator";
 import type { Modulator } from "../basic_soundbank/modulator";
-import { loadDate } from "../../utils/load_date";
+import { parseDateString } from "../../utils/load_date";
+import { isValidXGMSB } from "../../utils/xg_hacks";
 
 /**
  * Soundfont.ts
@@ -120,7 +121,7 @@ export class SoundFont2 extends BasicSoundBank {
                 }
 
                 case "ICRD":
-                    this.soundBankInfo.creationDate = loadDate(
+                    this.soundBankInfo.creationDate = parseDateString(
                         readBinaryStringIndexed(chunk.data, chunk.data.length)
                     );
                     break;
@@ -263,6 +264,8 @@ export class SoundFont2 extends BasicSoundBank {
         const shdrChunk = readRIFFChunk(presetChunk.data);
         this.verifyHeader(shdrChunk, "shdr");
 
+        SpessaSynthInfo("%cParsing samples...", consoleColors.info);
+
         /**
          * Read all the samples
          * (the current index points to start of the smpl read)
@@ -403,6 +406,17 @@ export class SoundFont2 extends BasicSoundBank {
             this.instruments,
             presets
         );
+
+        // Shadow presets with LSB (for XG)
+        const hasLSB = this.presets.some((p) => p.bankLSB > 0);
+        if (!hasLSB) {
+            SpessaSynthInfo("%cCopying MSB to LSBs...", consoleColors.info);
+            for (const preset of this.presets) {
+                if (!isValidXGMSB(preset.bankMSB)) {
+                    preset.bankLSB = preset.bankMSB;
+                }
+            }
+        }
         this.flush();
         SpessaSynthInfo(
             `%cParsing finished! %c"${this.soundBankInfo.name}"%c has %c${this.presets.length}%c presets,

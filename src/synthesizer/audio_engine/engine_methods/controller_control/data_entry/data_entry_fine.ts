@@ -14,8 +14,7 @@ import { modulatorSources } from "../../../../../soundbank/enums";
  */
 export function dataEntryFine(this: MIDIChannel, dataValue: number) {
     // Store in cc table
-    this.midiControllers[midiControllers.lsbForControl6DataEntry] =
-        dataValue << 7;
+    this.midiControllers[midiControllers.dataEntryLSB] = dataValue << 7;
     switch (this.dataEntryState) {
         default:
             break;
@@ -23,14 +22,15 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
         case dataEntryStates.RPCoarse:
         case dataEntryStates.RPFine: {
             const rpnValue =
-                this.midiControllers[midiControllers.RPNMsb] |
-                (this.midiControllers[midiControllers.RPNLsb] >> 7);
+                this.midiControllers[midiControllers.registeredParameterMSB] |
+                (this.midiControllers[midiControllers.registeredParameterLSB] >>
+                    7);
             switch (rpnValue) {
                 default:
                     break;
 
                 // Pitch bend range fine tune
-                case registeredParameterTypes.pitchBendRange: {
+                case registeredParameterTypes.pitchWheelRange: {
                     if (dataValue === 0) {
                         break;
                     }
@@ -46,7 +46,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                             7) +
                         dataValue / 128;
                     SpessaSynthInfo(
-                        `%cChannel ${this.channelNumber} bend range. Semitones: %c${actualTune}`,
+                        `%cChannel ${this.channelNumber} pitch wheel range. Semitones: %c${actualTune}`,
                         consoleColors.info,
                         consoleColors.value
                     );
@@ -84,8 +84,13 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
 
         case dataEntryStates.NRPFine: {
             const NRPNCoarse =
-                this.midiControllers[midiControllers.NRPNMsb] >> 7;
-            const NRPNFine = this.midiControllers[midiControllers.NRPNLsb] >> 7;
+                this.midiControllers[
+                    midiControllers.nonRegisteredParameterMSB
+                ] >> 7;
+            const NRPNFine =
+                this.midiControllers[
+                    midiControllers.nonRegisteredParameterLSB
+                ] >> 7;
             if (NRPNCoarse === nonRegisteredMSB.SF2) {
                 return;
             }
@@ -111,7 +116,7 @@ export function dataEntryFine(this: MIDIChannel, dataValue: number) {
                         this,
                         NRPNFine,
                         dataValue,
-                        this.midiControllers[midiControllers.dataEntryMsb] >> 7
+                        this.midiControllers[midiControllers.dataEntryMSB] >> 7
                     );
                     break;
             }

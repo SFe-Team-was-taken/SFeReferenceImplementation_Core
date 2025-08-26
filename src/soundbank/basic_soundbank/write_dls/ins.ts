@@ -1,20 +1,20 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { combineZones } from "./combine_zones";
-import { writeRIFFChunkParts, writeRIFFChunkRaw } from "../../../utils/riff_chunk";
+import {
+    writeRIFFChunkParts,
+    writeRIFFChunkRaw
+} from "../../../utils/riff_chunk";
 import { writeDword } from "../../../utils/byte_functions/little_endian";
 import { writeDLSRegion } from "./rgn2";
-import { writeArticulator } from "./art2";
-import { SpessaSynthGroupCollapsed, SpessaSynthGroupEnd } from "../../../utils/loggin";
+import {
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd
+} from "../../../utils/loggin";
 import { consoleColors } from "../../../utils/other";
 import { getStringBytes } from "../../../utils/byte_functions/string";
 import type { BasicSoundBank } from "../basic_soundbank";
 import type { BasicPreset } from "../basic_preset";
 
-/**
- * @param bank {BasicSoundBank}
- * @param preset {BasicPreset}
- * @returns {IndexedByteArray}
- */
 export function writeIns(
     bank: BasicSoundBank,
     preset: BasicPreset
@@ -34,19 +34,15 @@ export function writeIns(
     const inshData = new IndexedByteArray(12);
     writeDword(inshData, zones.length); // CRegions
     // Bank MSB is in bits 8-14
-    let ulBank = (preset.bank & 127) << 8;
+    let ulBank = (preset.bankMSB & 127) << 8;
     // Bit 32 means drums
-    if (preset.bank === 128) {
+    if (preset.bankMSB === 128) {
         ulBank |= 1 << 31;
     }
     writeDword(inshData, ulBank); // UlBank
     writeDword(inshData, preset.program & 127); // UlInstrument
 
     const insh = writeRIFFChunkRaw("insh", inshData);
-
-    // Write global zone
-    const art2 = writeArticulator(global);
-    const lar2 = writeRIFFChunkRaw("lar2", art2, false, true);
 
     // Write the region list
     const lrgn = writeRIFFChunkParts(
@@ -63,5 +59,5 @@ export function writeIns(
     const info = writeRIFFChunkRaw("INFO", inam, false, true);
 
     SpessaSynthGroupEnd();
-    return writeRIFFChunkParts("ins ", [insh, lrgn, lar2, info], true);
+    return writeRIFFChunkParts("ins ", [insh, lrgn, info], true);
 }

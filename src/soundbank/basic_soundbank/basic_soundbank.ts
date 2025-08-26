@@ -1,7 +1,7 @@
 import { SpessaSynthGroup, SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
 import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "./write_sf2/write";
-import { defaultModulators, Modulator } from "./modulator";
+import { Modulator, SPESSASYNTH_DEFAULT_MODULATORS } from "./modulator";
 import { DEFAULT_DLS_OPTIONS, writeDLSInternal } from "./write_dls/write_dls";
 import { BasicSample, EmptySample } from "./basic_sample";
 import { Generator } from "./generator";
@@ -13,6 +13,9 @@ import type { BasicMIDI } from "../../midi/basic_midi";
 
 import type { DLSWriteOptions, SF2VersionTag, SoundBankInfoData, SoundFont2WriteOptions } from "../types";
 import { generatorTypes } from "./generator_types";
+import type { SynthSystem } from "../../synthesizer/types";
+import { selectPreset } from "./preset_selector";
+import { type MIDIPatch, MIDIPatchTools } from "./midi_patch";
 
 /**
  * Represents a single sound bank, be it DLS or SF2.
@@ -55,8 +58,8 @@ export class BasicSoundBank {
     /**
      * Sound bank's default modulators.
      */
-    public defaultModulators: Modulator[] = defaultModulators.map((m) =>
-        Modulator.copy(m)
+    public defaultModulators: Modulator[] = SPESSASYNTH_DEFAULT_MODULATORS.map(
+        (m) => Modulator.copy(m)
     );
 
     /**
@@ -90,10 +93,8 @@ export class BasicSoundBank {
             if (newPresets) {
                 newPresets.forEach((newPreset) => {
                     if (
-                        presets.find(
-                            (existingPreset) =>
-                                existingPreset.bank === newPreset.bank &&
-                                existingPreset.program === newPreset.program
+                        presets.find((existingPreset) =>
+                            newPreset.matches(existingPreset)
                         ) === undefined
                     ) {
                         presets.push(newPreset);
@@ -297,7 +298,9 @@ export class BasicSoundBank {
         }
         const newPreset = new BasicPreset(this);
         newPreset.name = preset.name;
-        newPreset.bank = preset.bank;
+        newPreset.bankMSB = preset.bankMSB;
+        newPreset.bankLSB = preset.bankLSB;
+        newPreset.isGMGSDrum = preset.isGMGSDrum;
         newPreset.program = preset.program;
         newPreset.library = preset.library;
         newPreset.genre = preset.genre;
@@ -315,12 +318,7 @@ export class BasicSoundBank {
     }
 
     public flush() {
-        this.presets.sort((a, b) => {
-            if (a.bank !== b.bank) {
-                return a.bank - b.bank;
-            }
-            return a.program - b.program;
-        });
+        this.presets.sort(MIDIPatchTools.sorter.bind(MIDIPatchTools));
         this.parseInternal();
     }
 
@@ -379,23 +377,22 @@ export class BasicSoundBank {
             return trimmedIZones;
         };
 
-        SpessaSynthGroup("%cTrimming soundbank...", consoleColors.info);
+        SpessaSynthGroup("%cTrimming sound bank...", consoleColors.info);
         const usedProgramsAndKeys = mid.getUsedProgramsAndKeys(this);
 
         SpessaSynthGroupCollapsed(
-            "%cModifying soundbank...",
+            "%cModifying sound bank...",
             consoleColors.info
         );
         SpessaSynthInfo("Detected keys for midi:", usedProgramsAndKeys);
-        // Modify the soundfont to only include programs and samples that are used
+        // Modify the sound bank to only include programs and samples that are used
         for (
             let presetIndex = 0;
             presetIndex < this.presets.length;
             presetIndex++
         ) {
             const p = this.presets[presetIndex];
-            const string = p.bank + ":" + p.program;
-            const used = usedProgramsAndKeys[string];
+            const used = usedProgramsAndKeys.get(p);
             if (used === undefined) {
                 SpessaSynthInfo(
                     `%cDeleting preset %c${p.name}%c and its zones`,
@@ -476,11 +473,7 @@ export class BasicSoundBank {
         }
         this.removeUnusedElements();
 
-        this.soundBankInfo.comment =
-            `NOTE: This soundfont was trimmed by SpessaSynth to only contain presets used in "${mid.name}"\n\n` +
-            this.soundBankInfo.comment;
-
-        SpessaSynthInfo("%cSoundfont modified!", consoleColors.recognized);
+        SpessaSynthInfo("%cSound bank modified!", consoleColors.recognized);
         SpessaSynthGroupEnd();
         SpessaSynthGroupEnd();
     }
@@ -519,113 +512,10 @@ export class BasicSoundBank {
     }
 
     /**
-     * Get the appropriate preset, undefined if not found
-     * @param bankNr
-     * @param programNr
-     * @param allowXGDrums if true, allows XG drum banks (120, 126 and 127) as drum preset
-     * @returns {BasicPreset|undefined}
+     * Get the appropriate preset.
      */
-    public getPresetNoFallback(
-        bankNr: number,
-        programNr: number,
-        allowXGDrums = false
-    ): BasicPreset | undefined {
-        const isDrum = bankNr === 128 || (allowXGDrums && isXGDrums(bankNr));
-        // Check for exact match
-        let p;
-        if (isDrum) {
-            p = this.presets.find(
-                (p) =>
-                    p.bank === bankNr &&
-                    p.isDrumPreset(allowXGDrums) &&
-                    p.program === programNr
-            );
-        } else {
-            p = this.presets.find(
-                (p) => p.bank === bankNr && p.program === programNr
-            );
-        }
-        if (p) {
-            return p;
-        }
-        // No match...
-        if (isDrum) {
-            if (allowXGDrums) {
-                // Try any drum preset with matching program?
-                const p = this.presets.find(
-                    (p) =>
-                        p.isDrumPreset(allowXGDrums) && p.program === programNr
-                );
-                if (p) {
-                    return p;
-                }
-            }
-        }
-        return undefined;
-    }
-
-    /**
-     * Get the appropriate preset
-     * @param bankNr
-     * @param programNr
-     * @param allowXGDrums if true, allows XG drum banks (120, 126 and 127) as drum preset
-     * @returns {BasicPreset}
-     */
-    public getPreset(
-        bankNr: number,
-        programNr: number,
-        allowXGDrums = false
-    ): BasicPreset {
-        const isDrums = bankNr === 128 || (allowXGDrums && isXGDrums(bankNr));
-        // Check for exact match
-        let preset;
-        // Only allow drums if the preset is considered to be a drum preset
-        if (isDrums) {
-            preset = this.presets.find(
-                (p) =>
-                    p.bank === bankNr &&
-                    p.isDrumPreset(allowXGDrums) &&
-                    p.program === programNr
-            );
-        } else {
-            preset = this.presets.find(
-                (p) => p.bank === bankNr && p.program === programNr
-            );
-        }
-        if (preset) {
-            return preset;
-        }
-        // No match...
-        if (isDrums) {
-            // Drum preset: find any preset with bank 128
-            preset = this.presets.find(
-                (p) => p.isDrumPreset(allowXGDrums) && p.program === programNr
-            );
-            // Only allow 128, otherwise it would default to XG SFX
-            preset ??= this.presets.find((p) => p.isDrumPreset(allowXGDrums));
-        } else {
-            // Non-drum preset: find any preset with the given program that is not a drum preset
-            preset = this.presets.find(
-                (p) => p.program === programNr && !p.isDrumPreset(allowXGDrums)
-            );
-        }
-        if (preset) {
-            SpessaSynthInfo(
-                `%cPreset ${bankNr}.${programNr} not found. Replaced with %c${preset.name} (${preset.bank}.${preset.program})`,
-                consoleColors.warn,
-                consoleColors.recognized
-            );
-        }
-
-        // No preset, use the first one available
-        if (!preset) {
-            SpessaSynthInfo(
-                `Preset ${programNr} not found. Defaulting to`,
-                this.presets[0].name
-            );
-            preset = this.presets[0];
-        }
-        return preset;
+    public getPreset(patch: MIDIPatch, system: SynthSystem): BasicPreset {
+        return selectPreset(this.presets, patch, system);
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -674,13 +564,13 @@ export class BasicSoundBank {
             32, 33, 40, 41, 48, 56, 57, 58, 64, 65, 66, 126, 127
         ]);
         for (const preset of this.presets) {
-            if (isXGDrums(preset.bank)) {
+            if (isXGDrums(preset.bankMSB)) {
                 this._isXGBank = true;
                 if (!allowedPrograms.has(preset.program)) {
                     // Not valid!
                     this._isXGBank = false;
                     SpessaSynthInfo(
-                        `%cThis bank is not valid XG. Preset %c${preset.bank}:${preset.program}%c is not a valid XG drum. XG mode will use presets on bank 128.`,
+                        `%cThis bank is not valid XG. Preset %c${preset.bankMSB}:${preset.program}%c is not a valid XG drum. XG mode will use presets on bank 128.`,
                         consoleColors.info,
                         consoleColors.value,
                         consoleColors.info
