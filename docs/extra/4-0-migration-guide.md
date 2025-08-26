@@ -17,12 +17,6 @@ This is done because spessasynth can load sound bank formats other than SoundFon
 
 ## MIDI
 
-
-### MIDI (Class)
-
-Removed, replaced by `BasicMIDI.fromArrayBuffer()`.
-Drop-in replacement.
-
 ### MIDISequenceData
 
 Removed, BasicMIDI now contains all data.
@@ -43,20 +37,11 @@ They behave in exactly the same way.
 
 
  - `embeddedSoundFont` -> `embeddedSoundBank`
+ - `RMIDInfo` -> `rmidiInfo`
  - `MIDITicksToSeconds()` -> `midiTicksToSeconds()`
  - `modifyMIDI()` -> `modify()`
  - `midiPortChannelOffsets` -> `portChannelOffsetMap`
  - `applySnapshotToMIDI()` -> `applySnapshot()`
-
-####  RMIDInfo
-
-Renamed to `rmidiInfo`.
-
-Like `soundBankInfo`, the object's property names are no longer the fourCCs, but human-readable names.
-
-However, they still are stored as `Uint8Array`s due to possibly unknown encodings.
-
-Use `getRMIDInfo` or `setRMIDInfo` to get the decoded JS objects.
 
 #### writeRMIDI
 
@@ -110,14 +95,9 @@ Removed, replaced with `MIDITrack.channels`.
 Renamed to `binaryName` and will now be undefined if a name is not found.
 It is also protected. Use `getName` instead, which handles everything for you.
 
-#### midiNameUsesFileName
+### midiNameUsesFileName
 
 Removed. You can compare `getName() === fileName`.
-
-### MIDIBuilder
-
-Now takes an optional `options` object instead of separate option arguments.
-It also enforces correct MIDI formats 0 and 1.
 
 ## Enums
 
@@ -127,7 +107,7 @@ Enum renamed to `midiMessageTypes`.
 
 ### RMIDINFOChunks
 
-Enum removed due to the `rmidInfo` object being reworked.
+Enum renamed to `rmidInfoChunks`.
 
 
 ### interpolationTypes
@@ -140,6 +120,11 @@ Enum removed due to the `rmidInfo` object being reworked.
 - `XGText` -> `yamahaXGText`
 - `SoundCanvasText` -> `soundCanvasText`
 - `SoundCanvasDotDisplay` - `soundCanvasDotMatrix`
+
+## MIDI (Class)
+
+Removed, replaced by `BasicMIDI.fromArrayBuffer()`.
+Drop-in replacement.
 
 
 ## BasicSoundBank
@@ -245,8 +230,6 @@ The event names have been capitalized with camelCase. So, for example `noteon` b
 
 `allControllerReset` event no longer calls CC changes to default values. This was never intended as they are redundant when this controller exists.
 The default reset values can be accessed via the `defaultMIDIControllerValues` export. Locked controllers still get restored.
-
-`stopAll` now specifies a channel number.
 
 ### Master parameters
 
