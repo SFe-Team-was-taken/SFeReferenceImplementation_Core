@@ -1,17 +1,33 @@
-import { SpessaSynthGroup, SpessaSynthGroupCollapsed, SpessaSynthGroupEnd, SpessaSynthInfo } from "../../utils/loggin";
+import {
+    SpessaSynthGroup,
+    SpessaSynthGroupCollapsed,
+    SpessaSynthGroupEnd,
+    SpessaSynthInfo
+} from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
-import { DEFAULT_SF2_WRITE_OPTIONS, writeSF2Internal } from "./write_sf2/write";
+import {
+    DEFAULT_SF2_WRITE_OPTIONS,
+    writeSF2Internal
+} from "../soundfont/write/write";
 import { Modulator, SPESSASYNTH_DEFAULT_MODULATORS } from "./modulator";
-import { DEFAULT_DLS_OPTIONS, writeDLSInternal } from "./write_dls/write_dls";
+import {
+    DEFAULT_DLS_OPTIONS,
+    writeDLSInternal
+} from "../downloadable_sounds/write/write_dls";
 import { BasicSample, EmptySample } from "./basic_sample";
 import { Generator } from "./generator";
 import { BasicInstrument } from "./basic_instrument";
 import { BasicPreset } from "./basic_preset";
-import { isXGDrums } from "../../utils/xg_hacks";
+import { BankSelectHacks } from "../../utils/midi_hacks";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import type { BasicMIDI } from "../../midi/basic_midi";
 
-import type { DLSWriteOptions, SF2VersionTag, SoundBankInfoData, SoundFont2WriteOptions } from "../types";
+import type {
+    DLSWriteOptions,
+    SF2VersionTag,
+    SoundBankInfoData,
+    SoundFont2WriteOptions
+} from "../types";
 import { generatorTypes } from "./generator_types";
 import type { SynthSystem } from "../../synthesizer/types";
 import { selectPreset } from "./preset_selector";
@@ -556,21 +572,19 @@ export class BasicSoundBank {
         // At least one preset with bank 127, 126 or 120
         // MUST be a valid XG bank.
         // Allowed banks: (see XG specification)
-        // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 17, 24,
-        // 25, 27, 28, 29, 30, 31, 32, 33, 40, 41, 48, 56, 57, 58,
-        // 64, 65, 66, 126, 127
+        // Note: XG spec numbers the programs from 1...
         const allowedPrograms = new Set([
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 17, 24, 25, 27, 28, 29, 30, 31,
-            32, 33, 40, 41, 48, 56, 57, 58, 64, 65, 66, 126, 127
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 17, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 40, 41, 48, 56, 57, 58, 64, 65, 66, 126, 127
         ]);
         for (const preset of this.presets) {
-            if (isXGDrums(preset.bankMSB)) {
+            if (BankSelectHacks.isXGDrums(preset.bankMSB)) {
                 this._isXGBank = true;
                 if (!allowedPrograms.has(preset.program)) {
                     // Not valid!
                     this._isXGBank = false;
                     SpessaSynthInfo(
-                        `%cThis bank is not valid XG. Preset %c${preset.bankMSB}:${preset.program}%c is not a valid XG drum. XG mode will use presets on bank 128.`,
+                        `%cThis bank is not valid XG. Preset %c${preset.toString()}%c is not a valid XG drum. XG mode will use presets on bank 128.`,
                         consoleColors.info,
                         consoleColors.value,
                         consoleColors.info
@@ -592,7 +606,7 @@ export class BasicSoundBank {
                 );
             }
             SpessaSynthInfo(
-                `%c${info}: %c"${(value as string | Date).toString()}"`,
+                `%c${info}: %c${(value as string | Date).toLocaleString()}`,
                 consoleColors.info,
                 consoleColors.recognized
             );

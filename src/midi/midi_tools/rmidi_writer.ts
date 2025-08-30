@@ -10,7 +10,7 @@ import {
 import { consoleColors } from "../../utils/other";
 import { writeLittleEndianIndexed } from "../../utils/byte_functions/little_endian";
 import { DEFAULT_PERCUSSION } from "../../synthesizer/audio_engine/engine_components/synth_constants";
-import { isSystemXG } from "../../utils/xg_hacks";
+import { BankSelectHacks } from "../../utils/midi_hacks";
 import {
     isGM2On,
     isGMOn,
@@ -152,9 +152,9 @@ function correctBankOffsetInternal(
                 program: sentProgram,
                 bankLSB: channel.lastBankLSB?.data?.[1] ?? 0,
                 // Make sure to take bank offset into account
-                bankMSB: Math.max(
-                    channel.lastBank?.data?.[1] ?? 0 - mid.bankOffset,
-                    0
+                bankMSB: BankSelectHacks.subtrackBankOffset(
+                    channel.lastBank?.data?.[1] ?? 0,
+                    mid.bankOffset
                 ),
                 isGMGSDrum: channel.drums
             };
@@ -170,12 +170,19 @@ function correctBankOffsetInternal(
             // Set the program number
             e.data[0] = targetPreset.program;
 
+            if (targetPreset.isGMGSDrum && BankSelectHacks.isSystemXG(system)) {
+                // GM/GS drums returned, leave as is
+                // (drums are already set since we got GMGS, just the sound bank doesn't have any XG.)
+                continue;
+            }
+
             if (channel.lastBank === undefined) {
                 continue;
             }
-            channel.lastBank.data[1] = Math.min(
-                targetPreset.bankMSB + bankOffset,
-                127
+            channel.lastBank.data[1] = BankSelectHacks.addBankOffset(
+                targetPreset.bankMSB,
+                bankOffset,
+                targetPreset.isXGDrums
             );
             if (channel.lastBankLSB === undefined) {
                 continue;
@@ -261,16 +268,20 @@ function correctBankOffsetInternal(
             consoleColors.recognized
         );
         const ticks = track.events[indexToAdd].ticks;
-        const targetBank =
-            soundBank.getPreset(
-                {
-                    bankLSB: 0,
-                    bankMSB: 0,
-                    program: has.program,
-                    isGMGSDrum: has.drums
-                },
-                system
-            )?.bankMSB + bankOffset || bankOffset;
+        const targetPreset = soundBank.getPreset(
+            {
+                bankLSB: 0,
+                bankMSB: 0,
+                program: has.program,
+                isGMGSDrum: has.drums
+            },
+            system
+        );
+        const targetBank = BankSelectHacks.addBankOffset(
+            targetPreset.bankMSB,
+            bankOffset,
+            targetPreset.isXGDrums
+        );
         track.addEvent(
             new MIDIMessage(
                 ticks,
@@ -283,7 +294,7 @@ function correctBankOffsetInternal(
     });
 
     // Make sure to put xg if gm
-    if (system !== "gs" && !isSystemXG(system)) {
+    if (system !== "gs" && !BankSelectHacks.isSystemXG(system)) {
         for (const m of unwantedSystems) {
             const track = mid.tracks[m.tNum];
             track.deleteEvent(track.events.indexOf(m.e));
