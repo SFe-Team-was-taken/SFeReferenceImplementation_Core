@@ -24,7 +24,7 @@ import { applySnapshotInternal, modifyMIDIInternal } from "./midi_tools/midi_edi
 import type { SynthesizerSnapshot } from "../synthesizer/audio_engine/snapshot/synthesizer_snapshot";
 import { loadMIDIFromArrayBufferInternal } from "./midi_loader";
 import { midiMessageTypes } from "./enums";
-import type { KeyRange } from "../soundbank/types";
+import type { GenericRange } from "../soundbank/types";
 import { MIDITrack } from "./midi_track";
 import { fillWithDefaults } from "../utils/fill_with_defaults";
 import { parseDateString } from "../utils/load_date";
@@ -36,7 +36,7 @@ import type { SoundBankManager } from "../synthesizer/audio_engine/engine_compon
  */
 export class BasicMIDI {
     /**
-     * The track data of the MIDI file, represented as an array of tracks.
+     * The tracks in the sequence.
      */
     public tracks: MIDITrack[] = [];
 
@@ -63,7 +63,7 @@ export class BasicMIDI {
     public extraMetadata: MIDIMessage[] = [];
 
     /**
-     * An array containing the lyrics of the sequence, stored as binary chunks (Uint8Array).
+     * An array containing the lyrics of the sequence.
      */
     public lyrics: MIDIMessage[] = [];
 
@@ -75,7 +75,7 @@ export class BasicMIDI {
     /**
      * The MIDI key range used in the sequence, represented by a minimum and maximum note value.
      */
-    public keyRange: KeyRange = { min: 0, max: 127 };
+    public keyRange: GenericRange = { min: 0, max: 127 };
 
     /**
      * The tick position of the last voice event (such as note-on, note-off, or control change) in the sequence.
@@ -84,6 +84,7 @@ export class BasicMIDI {
 
     /**
      * An array of channel offsets for each MIDI port, using the SpessaSynth method.
+     * The index is the port number and the value is the channel offset.
      */
     public portChannelOffsetMap: number[] = [0];
 
@@ -104,8 +105,8 @@ export class BasicMIDI {
 
     /**
      * The RMID (Resource-Interchangeable MIDI) info data, if the file is RMID formatted.
-     * Otherwise, this field is undefined.
-     * Chunk type (e.g. "INAM"): Chunk data as a binary array.
+     * Otherwise, this object is empty.
+     * Info type: Chunk data as a binary array.
      * Note that text chunks contain a terminal zero byte.
      */
     public rmidiInfo: Partial<
@@ -118,7 +119,7 @@ export class BasicMIDI {
     public bankOffset = 0;
 
     /**
-     * If the MIDI file is a Soft Karaoke file (.kar), this flag is set to true.
+     * If the MIDI file is a Soft Karaoke file (.kar), this is set to true.
      * https://www.mixagesoftware.com/en/midikit/help/HTML/karaoke_formats.html
      */
     public isKaraokeFile = false;
@@ -212,9 +213,9 @@ export class BasicMIDI {
     }
 
     /**
-     * Converts ticks to time in seconds
-     * @param ticks time in MIDI ticks
-     * @returns time in seconds
+     * Converts MIDI ticks to time in seconds.
+     * @param ticks The time in MIDI ticks.
+     * @returns The time in seconds.
      */
     public midiTicksToSeconds(ticks: number): number {
         let totalSeconds = 0;
@@ -408,9 +409,9 @@ export class BasicMIDI {
 
     // noinspection JSUnusedGlobalSymbols
     /**
-     * Gets a given chunk from the RMIDI Information as text, undefined if it does not exist
+     * Gets a given chunk from the RMIDI information, undefined if it does not exist.
      * @param infoType The metadata type.
-     * @returns the text or undefined.
+     * @returns String, Date, ArrayBuffer or undefined.
      */
     public getRMIDInfo<K extends keyof RMIDInfoData>(
         infoType: K
