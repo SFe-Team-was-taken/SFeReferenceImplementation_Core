@@ -5,6 +5,7 @@ import {
 } from "./generator_types";
 import type { IndexedByteArray } from "../../utils/indexed_array";
 import { writeWord } from "../../utils/byte_functions/little_endian";
+import type { SoundFontWriteIndexes } from "../soundfont/write/types";
 
 export const GEN_BYTE_SIZE = 4;
 
@@ -12,7 +13,7 @@ export class Generator {
     /**
      * The generator's SF2 type.
      */
-    public generatorType: GeneratorType = generatorTypes.INVALID;
+    public generatorType: GeneratorType;
     /**
      * The generator's 16-bit value.
      */
@@ -42,10 +43,11 @@ export class Generator {
         }
     }
 
-    public write(genData: IndexedByteArray) {
+    public write(genData: IndexedByteArray, indexes: SoundFontWriteIndexes) {
         // Name is deceptive, it works on negatives
         writeWord(genData, this.generatorType);
         writeWord(genData, this.generatorValue);
+        indexes.gen++;
     }
 
     public toString() {

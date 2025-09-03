@@ -5,6 +5,7 @@ import { midiControllers } from "../../midi/enums";
 import { writeWord } from "../../utils/byte_functions/little_endian";
 import type { IndexedByteArray } from "../../utils/indexed_array";
 import { ModulatorSource } from "./modulator_source";
+import type { SoundFontWriteIndexes } from "../soundfont/write/types";
 
 /**
  * Modulators.ts
@@ -120,7 +121,7 @@ export class Modulator {
      * Checks if the pair of modulators is identical (in SF2 terms)
      * @param mod1 modulator 1
      * @param mod2 modulator 2
-     * @param checkAmount if the amount should be checked too (SF2 specification says to not check it)
+     * @param checkAmount if the amount should be checked too.
      * @returns if they are identical
      */
     public static isIdentical(
@@ -164,12 +165,16 @@ export class Modulator {
         );
     }
 
-    public write(array: IndexedByteArray) {
-        writeWord(array, this.primarySource.toSourceEnum());
-        writeWord(array, this.destination);
-        writeWord(array, this.transformAmount);
-        writeWord(array, this.secondarySource.toSourceEnum());
-        writeWord(array, this.transformType);
+    public write(modData: IndexedByteArray, indexes?: SoundFontWriteIndexes) {
+        writeWord(modData, this.primarySource.toSourceEnum());
+        writeWord(modData, this.destination);
+        writeWord(modData, this.transformAmount);
+        writeWord(modData, this.secondarySource.toSourceEnum());
+        writeWord(modData, this.transformType);
+        if (!indexes) {
+            return;
+        }
+        indexes.mod++;
     }
 
     /**
