@@ -214,6 +214,16 @@ export interface SoundFont2WriteOptions {
      * If an SF3 bank should be decompressed back to SF2. Not recommended.
      */
     decompress: boolean;
+
+    /**
+     * Soundbank version.
+     */
+    bankVersion: "sfe-4.0"|"soundfont2";
+
+    /**
+     * Use 64-bit. Only recommended if supported.
+     */
+    use64Bit: boolean;
 }
 
 /**
