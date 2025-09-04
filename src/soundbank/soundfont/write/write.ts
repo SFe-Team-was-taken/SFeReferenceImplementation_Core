@@ -39,9 +39,7 @@ export const DEFAULT_SF2_WRITE_OPTIONS: SoundFont2WriteOptions = {
     progressFunction: undefined,
     writeDefaultModulators: true,
     writeExtendedLimits: true,
-    decompress: false,
-    bankVersion: "sfe-4.0",
-    use64Bit: false
+    decompress: false
 };
 
 /**
@@ -82,56 +80,16 @@ export async function writeSF2Internal(
      */
     const infoArrays: IndexedByteArray[] = [];
     bank.soundBankInfo.software = "SpessaSynth"; // ( ͡° ͜ʖ ͡°)
-
-    switch (options?.bankVersion)
-    {
-        case "sfe-4.0":
-            if (
-                options?.use64Bit
-            ) {
-                // Set version to 4.0
-                bank.soundBankInfo.version.major = 4;
-                bank.soundBankInfo.version.minor = 0;
-            } 
-            else 
-            {
-                if (
-                    (options?.compress ||
-                    bank.samples.some((s) => s.isCompressed)) &&
-                    !options?.decompress
-                ) {
-                    // Set version to 3.1024
-                    bank.soundBankInfo.version.major = 3;
-                    bank.soundBankInfo.version.minor = 1024;
-                }
-                else
-                {
-                    // Set version to 2.1024
-                    bank.soundBankInfo.version.major = 2;
-                    bank.soundBankInfo.version.minor = 1024;
-                }
-            }
-            break;
-        case "soundfont2":
-            if (
-                (options?.compress ||
-                bank.samples.some((s) => s.isCompressed)) &&
-                !options?.decompress
-            ) {
-                // Set version to 3
-                bank.soundBankInfo.version.major = 3;
-                bank.soundBankInfo.version.minor = 0;
-            }
-            else
-            {
-                // Set version to 2.4
-                bank.soundBankInfo.version.major = 2;
-                bank.soundBankInfo.version.minor = 4;
-            }
-            break;
-        default:
-            throw new Error(`Invalid soundbank version: ${options?.bankVersion}`);
-    }    
+    if (options?.compress || bank.samples.some((s) => s.isCompressed)) {
+        // Set version to 3
+        bank.soundBankInfo.version.major = 3;
+        bank.soundBankInfo.version.minor = 0;
+    }
+    if (options?.decompress) {
+        // Set version to 2.4
+        bank.soundBankInfo.version.major = 2;
+        bank.soundBankInfo.version.minor = 4;
+    }
 
     const writeSF2Info = (type: SF2InfoFourCC, data: string) => {
         infoArrays.push(

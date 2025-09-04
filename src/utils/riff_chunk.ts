@@ -1,8 +1,7 @@
 import { IndexedByteArray } from "./indexed_array";
 import {
     readLittleEndianIndexed,
-    writeDword,
-    writeQword
+    writeDword
 } from "./byte_functions/little_endian";
 import {
     readBinaryString,
@@ -65,18 +64,11 @@ export class RIFFChunk {
 export function readRIFFChunk(
     dataArray: IndexedByteArray,
     readData = true,
-    forceShift = false,
-    rifs = false
+    forceShift = false
 ): RIFFChunk {
     const header = readBinaryStringIndexed(dataArray, 4) as FourCC;
 
-    let size;
-    if (rifs) 
-    {
-        size = readLittleEndianIndexed(dataArray, 8);
-    } else {
-        size = readLittleEndianIndexed(dataArray, 4);
-    }
+    let size = readLittleEndianIndexed(dataArray, 4);
     // @ts-expect-error Not all RIFF files are compliant
     if (header === "") {
         // Safeguard against evil DLS files
@@ -115,22 +107,12 @@ export function writeRIFFChunkRaw(
     header: FourCC,
     data: Uint8Array,
     addZeroByte = false,
-    isList = false,
-    rifs = false,
-    includePadByte = false
-
+    isList = false
 ): IndexedByteArray {
     if (header.length !== 4) {
         throw new Error(`Invalid header length: ${header}`);
     }
-    let dataStartOffset;
-
-    if (rifs) {
-        dataStartOffset = 12;
-    } else {
-        dataStartOffset = 8;
-    }
-
+    let dataStartOffset = 8;
     let headerWritten = header;
     let dataLength = data.length;
     if (addZeroByte) {
@@ -145,10 +127,7 @@ export function writeRIFFChunkRaw(
     }
     let finalSize = dataStartOffset + dataLength;
     if (finalSize % 2 !== 0) {
-        if (includePadByte)
-        {
-            writtenSize++;
-        } 
+        // Pad byte does not get included in the size
         finalSize++;
     }
 
@@ -156,14 +135,9 @@ export function writeRIFFChunkRaw(
     // FourCC ("RIFF", "LIST", "pdta" etc.)
     writeBinaryStringIndexed(outArray, headerWritten);
     // Chunk size
-    if (rifs) {
-        writeQword(outArray, writtenSize);
-    } else {
-        writeDword(outArray, writtenSize);
-    }
-    if (isList)
-    {
-        // list type (e.g. "INFO")
+    writeDword(outArray, writtenSize);
+    if (isList) {
+        // List type (e.g. "INFO")
         writeBinaryStringIndexed(outArray, header);
     }
     outArray.set(data, dataStartOffset);
@@ -175,21 +149,14 @@ export function writeRIFFChunkRaw(
  * @param header fourCC
  * @param chunks chunk data parts, it will be combined in order
  * @param isList adds "LIST" as the chunk type and writes the actual type at the start of the data
- * @param rifs {boolean} whether the chunk is 64-bit (RIFF-like simple 64-bit)
  * @returns the binary data
  */
 export function writeRIFFChunkParts(
     header: FourCC,
     chunks: Uint8Array[],
-    isList = false,
-    rifs = false
+    isList = false
 ): IndexedByteArray {
-    let dataOffset: number;
-    if (rifs) {
-        dataOffset = 12;
-    } else {
-        dataOffset = 8;
-    }
+    let dataOffset = 8;
     let headerWritten = header;
     const dataLength = chunks.reduce((len, c) => c.length + len, 0);
     let writtenSize = dataLength;
@@ -209,11 +176,7 @@ export function writeRIFFChunkParts(
     // FourCC ("RIFF", "LIST", "pdta" etc.)
     writeBinaryStringIndexed(outArray, headerWritten);
     // Chunk size
-    if (rifs) {
-        writeQword(outArray, writtenSize);
-    } else {
-        writeDword(outArray, writtenSize);
-    }
+    writeDword(outArray, writtenSize);
     if (isList) {
         // List type (e.g. "INFO")
         writeBinaryStringIndexed(outArray, header);
