@@ -1,7 +1,8 @@
 import { IndexedByteArray } from "./indexed_array";
 import {
     readLittleEndianIndexed,
-    writeDword
+    writeDword,
+    writeQword
 } from "./byte_functions/little_endian";
 import {
     readBinaryString,
@@ -107,12 +108,22 @@ export function writeRIFFChunkRaw(
     header: FourCC,
     data: Uint8Array,
     addZeroByte = false,
-    isList = false
+    isList = false,
+    rifs = false,
+    includePadByte = false
+
 ): IndexedByteArray {
     if (header.length !== 4) {
         throw new Error(`Invalid header length: ${header}`);
     }
-    let dataStartOffset = 8;
+    let dataStartOffset;
+
+    if (rifs) {
+        dataStartOffset = 12;
+    } else {
+        dataStartOffset = 8;
+    }
+
     let headerWritten = header;
     let dataLength = data.length;
     if (addZeroByte) {
@@ -127,7 +138,10 @@ export function writeRIFFChunkRaw(
     }
     let finalSize = dataStartOffset + dataLength;
     if (finalSize % 2 !== 0) {
-        // Pad byte does not get included in the size
+        if (includePadByte)
+        {
+            writtenSize++;
+        } 
         finalSize++;
     }
 
@@ -135,9 +149,14 @@ export function writeRIFFChunkRaw(
     // FourCC ("RIFF", "LIST", "pdta" etc.)
     writeBinaryStringIndexed(outArray, headerWritten);
     // Chunk size
-    writeDword(outArray, writtenSize);
-    if (isList) {
-        // List type (e.g. "INFO")
+    if (rifs) {
+        writeQword(outArray, writtenSize);
+    } else {
+        writeDword(outArray, writtenSize);
+    }
+    if (isList)
+    {
+        // list type (e.g. "INFO")
         writeBinaryStringIndexed(outArray, header);
     }
     outArray.set(data, dataStartOffset);
