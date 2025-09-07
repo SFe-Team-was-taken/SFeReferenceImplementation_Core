@@ -243,7 +243,7 @@ export class BasicInstrument {
                     if (genValue !== undefined) {
                         if (genValue === targetValue) {
                             // That exact value exists. Since it's global now, remove it
-                            z.setGenerator(checkedType, undefined);
+                            z.setGenerator(checkedType, null);
                         }
                     } else {
                         // That type does not exist at all here.

@@ -74,13 +74,12 @@ export class BasicZone {
         this.setGenerator(type, value + genValue, validate);
     }
 
-    // noinspection JSUnusedGlobalSymbols
     /**
      * Sets a generator to a given value if preset, otherwise adds a new one.
      */
     public setGenerator(
         type: GeneratorType,
-        value: number | undefined,
+        value: number | null,
         validate = true
     ) {
         switch (type) {
@@ -93,7 +92,7 @@ export class BasicZone {
             case generatorTypes.keyRange:
                 throw new Error("Set the range manually");
         }
-        if (value === undefined) {
+        if (value === null) {
             this.generators = this.generators.filter(
                 (g) => g.generatorType !== type
             );
@@ -102,7 +101,7 @@ export class BasicZone {
         const index = this.generators.findIndex(
             (g) => g.generatorType === type
         );
-        if (index > 0) {
+        if (index >= 0) {
             this.generators[index] = new Generator(type, value, validate);
         } else {
             this.addGenerators(new Generator(type, value, validate));
