@@ -64,7 +64,9 @@ export type SF2ChunkFourCC =
     | "ibag"
     | "imod"
     | "igen"
-    | "shdr";
+    | "shdr"
+    | "ISFe"
+    ;
 
 export type DLSInfoFourCC = GenericBankInfoFourCC | "ISBJ";
 
@@ -252,4 +254,38 @@ export interface DLSLoop {
     Specifies the length of the loop in samples.
      */
     loopLength: number;
+}
+
+export interface SFeFeatureFlag {
+    /**
+     * Feature flag branch number 
+     */
+    branch: number;
+    /**
+     * Feature flag leaf number
+     */
+    leaf: number;
+    /**
+     * Feature flags
+     */
+    flags: number;
+}
+
+export interface FeatureFlagList {
+    /**
+     * Feature flag branch number 
+     */
+    branch: number;
+    /**
+     * Feature flag leaf number
+     */
+    leaf: number;
+    /**
+     * Feature flags
+     */
+    flags: number;
+    /**
+     * Feature flags
+     */
+    featureName: string;
 }

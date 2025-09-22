@@ -14,7 +14,7 @@ import { stbvorbis } from "../../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { BasicSoundBank } from "../../basic_soundbank/basic_soundbank";
 import { applyInstrumentZones } from "./instrument_zones";
 import { readZoneIndexes } from "./zones";
-import type { SF2InfoFourCC } from "../../types";
+import type { SF2InfoFourCC, SFeFeatureFlag, FeatureFlagList } from "../../types";
 import type { Generator } from "../../basic_soundbank/generator";
 import type { Modulator } from "../../basic_soundbank/modulator";
 import { parseDateString } from "../../../utils/load_date";
@@ -46,13 +46,13 @@ export class SoundFont2 extends BasicSoundBank {
 
         // Read the main chunk
         const firstChunk = readRIFFChunk(mainFileArray, false);
-        this.verifyHeader(firstChunk, "riff");
+        this.verifySFeHeader(firstChunk);
 
         const type = readBinaryStringIndexed(mainFileArray, 4).toLowerCase();
-        if (type !== "sfbk" && type !== "sfpk") {
+        if (type !== "sfbk" && type !== "sfpk" && type !== "sfen") {
             SpessaSynthGroupEnd();
             throw new SyntaxError(
-                `Invalid soundFont! Expected "sfbk" or "sfpk" got "${type}"`
+                `Invalid soundFont! Expected "sfbk", "sfpk" or "sfen" got "${type}"`
             );
         }
         /*
@@ -61,6 +61,7 @@ export class SoundFont2 extends BasicSoundBank {
         and the only other difference is that the main chunk isn't "sfbk" but rather "sfpk"
          */
         const isSF2Pack = type === "sfpk";
+        const isSFe64 = type === "sfen";
 
         // INFO
         const infoChunk = readRIFFChunk(mainFileArray);
@@ -74,6 +75,7 @@ export class SoundFont2 extends BasicSoundBank {
         }
 
         let xdtaChunk: RIFFChunk | undefined = undefined;
+        let isfeChunk: RIFFChunk | undefined = undefined;
 
         while (infoChunk.data.length > infoChunk.data.currentIndex) {
             const chunk = readRIFFChunk(infoChunk.data);
@@ -115,6 +117,12 @@ export class SoundFont2 extends BasicSoundBank {
                             consoleColors.recognized
                         );
                         xdtaChunk = chunk;
+                    } else if (listType === "ISFe") {
+                        SpessaSynthInfo(
+                            "%cISFe-list chunk found!",
+                            consoleColors.recognized
+                        );
+                        isfeChunk = chunk;
                     }
                     break;
                 }
@@ -182,6 +190,141 @@ export class SoundFont2 extends BasicSoundBank {
             xChunks.igen = readRIFFChunk(xdtaChunk.data);
             xChunks.shdr = readRIFFChunk(xdtaChunk.data);
         }
+
+        // ISFe-list chunk
+
+        const isfeChunks: Partial<{
+            sfty: RIFFChunk;
+            sfvx: RIFFChunk;
+            flag: RIFFChunk;
+        }> = {};
+        if (isfeChunk !== undefined) {
+            isfeChunks.sfty = readRIFFChunk(isfeChunk.data);
+            isfeChunks.sfvx = readRIFFChunk(isfeChunk.data);
+            isfeChunks.flag = readRIFFChunk(isfeChunk.data);
+            // Verify ISFe-list chunks
+
+            let sftyStr = readBinaryString(isfeChunks.sfty?.data);
+            if (sftyStr === "SFe standard") {
+                // Trailing sdta chunk is not supported
+                SpessaSynthInfo(
+                `%cSFe bank type: %cstandard`,
+                consoleColors.recognized,
+                consoleColors.info
+                );
+            } else {
+                SpessaSynthGroupEnd();
+                this.parsingError(
+                    `Invalid SFe bank type: "${sftyStr}"`
+                );
+            }
+
+            if (isfeChunks.sfvx?.data.length !== 46) {
+                // must be 46 bytes in length otherwise invalid
+                SpessaSynthInfo(
+                    `Invalid SFe extended version chunk!`,
+                    consoleColors.warn
+                );
+                this.soundBankInfo.version = {
+                    major: 4,
+                    minor: 0
+                };
+            } else {
+                const sfeMajVer = readLittleEndianIndexed(isfeChunks.sfvx?.data,2);
+                const sfeMinVer = readLittleEndianIndexed(isfeChunks.sfvx?.data,2);
+                const sfeSpecType = readBinaryStringIndexed(isfeChunks.sfvx?.data,20);
+                const sfeDraft = readLittleEndianIndexed(isfeChunks.sfvx?.data,2);
+                const sfeVerStr = readBinaryStringIndexed(isfeChunks.sfvx?.data,20);
+
+                if (sfeMajVer >= 5) {
+                    // SFe 5 or later, structurally incompatible
+                    SpessaSynthGroupEnd();
+                    this.parsingError(
+                        `Unsupported SFe version: "${sfeMajVer}.${sfeMinVer}"`
+                    );
+                } else if (sfeMajVer == 4 && sfeMinVer > 0) {
+                    // SFe 4.1 or later (4.x)
+                    SpessaSynthInfo(
+                        `SFe version not fully supported: "${sfeMajVer}.${sfeMinVer}"`,
+                        consoleColors.warn
+                    );
+                    this.soundBankInfo.version = {
+                        major: 4,
+                        minor: 0
+                    };
+                } else if (sfeMajVer == 4 && sfeMinVer == 0) {
+                    // SFe 4.0 (currently the only supported version)
+                    SpessaSynthInfo(
+                    `%cSFe bank version: %c${sfeMajVer}.${sfeMinVer}`,
+                    consoleColors.recognized,
+                    consoleColors.info
+                    );
+                    this.soundBankInfo.version = {
+                        major: sfeMajVer,
+                        minor: sfeMinVer
+                    };
+                    if (sfeSpecType == "Draft") {
+                        SpessaSynthInfo("%cThis bank is written to a SFe draft specification.", consoleColors.warn);
+                        SpessaSynthInfo(
+                        `%cDraft revision: %${sfeDraft}`,
+                        consoleColors.recognized,
+                        consoleColors.info
+                        );
+                    } else {
+                        // Release Candidate is treated like Final
+                        SpessaSynthInfo(
+                        `%cSFe specification type: %c${sfeSpecType}`,
+                        consoleColors.recognized,
+                        consoleColors.info
+                        );
+                    }
+                    SpessaSynthInfo(
+                    `%cSFe version string: %c${sfeVerStr}`,
+                    consoleColors.recognized,
+                    consoleColors.info
+                    );
+                } else {
+                    // If it's below version 4, we treat this as an non-fatal error condition and ignore it
+                    SpessaSynthInfo(
+                        `%cInvalid SFe version: "${sfeMajVer}.${sfeMinVer}"`,
+                        consoleColors.warn
+                    );
+                    this.soundBankInfo.version = {
+                        major: 4,
+                        minor: 0
+                    };
+                }
+            }
+
+            // For now, flags are only used for compatibility check
+            let sfeFlags: SFeFeatureFlag[] = [];
+            let supportedFlags: FeatureFlagList[] = [];
+            if (isfeChunks.flag?.data.length % 6 !== 0) {
+                // Feature flags must be a multiple of 6 bytes in length
+                SpessaSynthInfo(
+                    `Corrupted feature flag sub-chunk!`,
+                    consoleColors.warn
+                );
+            } else {
+                while (isfeChunks.flag?.data.length > isfeChunks.flag?.data.currentIndex)
+                {
+                    this.loadSupportedFlags(supportedFlags);
+                    sfeFlags.push(
+                        {
+                            branch: readLittleEndianIndexed(isfeChunks.flag?.data, 1), 
+                            leaf: readLittleEndianIndexed(isfeChunks.flag?.data, 1), 
+                            flags: readLittleEndianIndexed(isfeChunks.flag?.data, 4)
+                        }
+                    );
+                }
+                for (let i = 0; i < sfeFlags.length; i++)
+                {
+                    this.verifyFlag(supportedFlags[i], sfeFlags[i]);
+                }
+            }
+        }
+
+
 
         // SDTA
         const sdtaChunk = readRIFFChunk(mainFileArray, false);
@@ -432,12 +575,311 @@ export class SoundFont2 extends BasicSoundBank {
         }
     }
 
+    protected verifySFeHeader(chunk: RIFFChunk) {
+        if (chunk.header.toLowerCase() !== "riff" && chunk.header.toLowerCase() !== "rifs") {
+            SpessaSynthGroupEnd();
+            this.parsingError(
+                `Invalid chunk header! Expected "riff" or "rifs" got "${chunk.header.toLowerCase()}"`
+            );
+        }
+    }
+
     protected verifyText(text: string, expected: string) {
         if (text.toLowerCase() !== expected.toLowerCase()) {
             SpessaSynthGroupEnd();
             this.parsingError(
                 `Invalid FourCC: Expected "${expected.toLowerCase()}" got "${text.toLowerCase()}"\``
             );
+        }
+    }
+
+    protected loadSupportedFlags(supportedList: FeatureFlagList[])
+    {
+        // Todo: do this in a better way
+        supportedList.push(
+            {
+                branch: 0,
+                leaf: 0,
+                flags: 15,
+                featureName: "Tuning"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 0,
+                leaf: 1,
+                flags: 3,
+                featureName: "Looping"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 0,
+                leaf: 2,
+                flags: 1,
+                featureName: "Filter Types"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 0,
+                leaf: 3,
+                flags: 884736096,
+                featureName: "Filter Params"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 0,
+                leaf: 4,
+                flags: 7,
+                featureName: "Attenuation"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 0,
+                leaf: 5,
+                flags: 69391,
+                featureName: "Effects"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 0,
+                leaf: 6,
+                flags: 15,
+                featureName: "LFO"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 0,
+                leaf: 7,
+                flags: 524287,
+                featureName: "Envelopes"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 0,
+                leaf: 8,
+                flags: 231169,
+                featureName: "MIDI CC"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 0,
+                leaf: 9,
+                flags: 127,
+                featureName: "Generators"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 0,
+                leaf: 10,
+                flags: 127,
+                featureName: "Zones"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 0,
+                leaf: 11,
+                flags: 0,
+                featureName: "Reserved"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 1,
+                leaf: 0,
+                flags: 16383,
+                featureName: "Modulators"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 1,
+                leaf: 1,
+                flags: 51,
+                featureName: "Modulator Controllers"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 1,
+                leaf: 2,
+                flags: 998838,
+                featureName: "Modulator Parameters"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 1,
+                leaf: 3,
+                flags: 672137215,
+                featureName: "Modulator Parameters"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 1,
+                leaf: 4,
+                flags: 0,
+                featureName: "Modulator Parameters"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 1,
+                leaf: 5,
+                flags: 0,
+                featureName: "NRPN"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 1,
+                leaf: 6,
+                flags: 263167,
+                featureName: "Default Modulators"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 1,
+                leaf: 7,
+                flags: 0,
+                featureName: "Reserved"
+
+            }
+        )
+        supportedList.push(
+            {
+                branch: 1,
+                leaf: 8,
+                flags: 0,
+                featureName: "Reserved"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 2,
+                leaf: 0,
+                flags: 1,
+                featureName: "24-Bit Samples"
+            }
+        )        
+        supportedList.push(
+            {
+                branch: 2,
+                leaf: 1,
+                flags: 0,
+                featureName: "8-Bit Samples"
+            }
+        )        
+        supportedList.push(
+            {
+                branch: 2,
+                leaf: 2,
+                flags: 0,
+                featureName: "32-Bit Samples"
+            }
+        )        
+        supportedList.push(
+            {
+                branch: 2,
+                leaf: 3,
+                flags: 0,
+                featureName: "64-Bit Samples"
+            }
+        )        
+        supportedList.push(
+            {
+                branch: 3,
+                leaf: 0,
+                flags: 1,
+                featureName: "SFe Compression"
+            }
+        )     
+        supportedList.push(
+            {
+                branch: 3,
+                leaf: 1,
+                flags: 1,
+                featureName: "Compression Formats"
+            }
+        )     
+        supportedList.push(
+            {
+                branch: 4,
+                leaf: 0,
+                flags: 0,
+                featureName: "Metadata"
+            }
+        )     
+        supportedList.push(
+            {
+                branch: 4,
+                leaf: 1,
+                flags: 0,
+                featureName: "Reserved"
+            }
+        )     
+        supportedList.push(
+            {
+                branch: 4,
+                leaf: 2,
+                flags: 0,
+                featureName: "Sample ROM"
+            }
+        )     
+        supportedList.push(
+            {
+                branch: 4,
+                leaf: 3,
+                flags: 0,
+                featureName: "ROM Emulator"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 4,
+                leaf: 4,
+                flags: 0,
+                featureName: "Reserved"
+            }
+        )
+        supportedList.push(
+            {
+                branch: 5,
+                leaf: 0,
+                flags: 0,
+                featureName: "End of Flags"
+            }
+        )
+    }
+
+    protected verifyFlag(supported: FeatureFlagList, bankFlags: SFeFeatureFlag)
+    {
+        if (!(supported.featureName === "Reserved" || supported.featureName === "End of Flags")) {
+            if (((supported.flags & bankFlags.flags) === bankFlags.flags))
+            {
+                SpessaSynthInfo(
+                    `%cFeature branch %c${bankFlags.branch} leaf ${bankFlags.leaf} (${supported.featureName}) %cfully supported`,
+                    consoleColors.recognized,
+                    consoleColors.info,
+                    consoleColors.recognized                
+                );
+            } else {
+                SpessaSynthInfo(
+                    `%cFeature branch ${bankFlags.branch} leaf ${bankFlags.leaf} (${supported.featureName}) not fully supported`,
+                    consoleColors.warn
+                );
+            }
         }
     }
 }
