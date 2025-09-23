@@ -1,7 +1,7 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { readLittleEndianIndexed, signedInt8 } from "../../../utils/byte_functions/little_endian";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
-import { readBinaryStringIndexed } from "../../../utils/byte_functions/string";
+import { readBinaryString, readBinaryStringIndexed } from "../../../utils/byte_functions/string";
 import { BasicSample } from "../../basic_soundbank/basic_sample";
 import { consoleColors } from "../../../utils/other";
 import type { SampleType } from "../../enums";
@@ -92,16 +92,56 @@ export class SoundFontSample extends BasicSample {
         // SF2Pack (entire smpl vorbis)
         if (sampleDataArray instanceof IndexedByteArray) {
             if (compressed) {
+                const sampleData: Uint8Array<ArrayBufferLike> = sampleDataArray.slice(
+                    this.startByteOffset / 2 + smplStart,
+                    this.endByteOffset / 2 + smplStart
+                )
+                // Read sample header. Currently only vorbis is supported.
+                const sampleHeader: string = readBinaryString(sampleData, 4, 0);   
+
+                switch(sampleHeader)
+                {
+                    default:
+                        throw new Error(`Unsupported sample type: ${sampleHeader}`);
+                    case "OggS": {
+                        const hdr: string = readBinaryString(sampleData, 7, 29);
+                        switch(hdr)
+                        {
+                            default:
+                                throw new Error(`Unsupported sample type: ${hdr}`);
+                                break;
+
+                            case "pusHead":
+                                // Opus
+                                throw new Error(`Opus is currently unsupported.`);
+                                break;
+
+                            case "vorbis":
+                                // Vorbis - supported
+                        }
+                        break;
+                    }
+                    case "fLaC":
+                        // FLAC
+                        throw new Error(`FLAC is currently unsupported.`);
+                        break;
+                    case "RIFF": {
+                        const wave: string = readBinaryString(sampleData, 4, 8);
+                        if(wave !== "WAVE"){
+                            throw new Error(`Unsupported sample type: ${wave}`);
+                        } else {
+                            // WAV
+                        }
+                    }
+                }
+                
                 // Correct loop points
                 this.loopStart += this.startByteOffset / 2;
                 this.loopEnd += this.startByteOffset / 2;
 
-                // Copy the compressed data, it can be preserved during writing
+                // Copy the compressed/containerised data, it can be preserved during writing
                 this.setCompressedData(
-                    sampleDataArray.slice(
-                        this.startByteOffset / 2 + smplStart,
-                        this.endByteOffset / 2 + smplStart
-                    )
+                    sampleData
                 );
             } else {
                 // Regular sf2 s16le
