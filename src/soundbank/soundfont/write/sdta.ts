@@ -49,7 +49,14 @@ export async function getSDTA(
 
         // Raw data: either copy s16le or encoded vorbis or encode manually if overridden
         // Use set timeout so the thread doesn't die
-        const r = s.getRawData(true);
+        const r = s.getRawData(
+            {
+                vorbis: true,
+                opus: false,
+                flac: false,
+                wav: false
+            }
+        );
         writtenCount++;
         await progressFunc?.(s.name, writtenCount, bank.samples.length);
 
