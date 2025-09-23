@@ -289,3 +289,22 @@ export interface FeatureFlagList {
      */
     featureName: string;
 }
+
+export interface AllowedContainers {
+    /**
+     * Ogg Vorbis
+     */
+    vorbis: boolean;
+    /**
+     * Ogg Opus
+     */
+    opus: boolean;
+    /**
+     * FLAC
+     */
+    flac: boolean;
+    /**
+     * WAV (including ADPCM, U-law and A-law)
+     */
+    wav: boolean;
+}

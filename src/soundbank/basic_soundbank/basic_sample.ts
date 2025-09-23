@@ -3,7 +3,7 @@ import { IndexedByteArray } from "../../utils/indexed_array";
 import { stbvorbis } from "../../externals/stbvorbis_sync/stbvorbis_wrapper";
 import { type SampleType, sampleTypes } from "../enums";
 import type { BasicInstrument } from "./basic_instrument";
-import type { SampleEncodingFunction } from "../types";
+import type { SampleEncodingFunction, AllowedContainers } from "../types";
 
 // Should be reasonable for most cases
 const RESAMPLE_RATE = 48000;
@@ -121,11 +121,11 @@ export class BasicSample {
 
     /**
      * Get raw data for writing the file, either a compressed bit stream or signed 16-bit little endian PCM data.
-     * @param allowVorbis if vorbis file data is allowed.
+     * @param allowContainers if containerised file data is allowed.
      * @return either s16le or vorbis data.
      */
-    public getRawData(allowVorbis: boolean): Uint8Array {
-        if (this.compressedData && allowVorbis && !this.dataOverridden) {
+    public getRawData(allowContainers: AllowedContainers): Uint8Array {
+        if (this.compressedData && allowContainers.vorbis && !this.dataOverridden) {
             return this.compressedData;
         }
         return this.encodeS16LE();
