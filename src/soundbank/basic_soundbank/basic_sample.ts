@@ -108,7 +108,10 @@ export class BasicSample {
         return (
             this.sampleType === sampleTypes.rightSample ||
             this.sampleType === sampleTypes.leftSample ||
-            this.sampleType === sampleTypes.linkedSample
+            this.sampleType === sampleTypes.linkedSample ||
+            this.sampleType === sampleTypes.wavRightSample ||
+            this.sampleType === sampleTypes.wavLeftSample ||
+            this.sampleType === sampleTypes.wavLinkedSample
         );
     }
 
@@ -204,7 +207,12 @@ export class BasicSample {
      * Unlinks the sample from its stereo link if it has any.
      */
     public unlinkSample() {
-        this.setSampleType(sampleTypes.monoSample);
+        if ((this.sampleType & 0x70) == 0x70) {
+            // If wav bits are set, then unlink to wav sample.
+            this.setSampleType(sampleTypes.wavMonoSample);
+        } else {
+            this.setSampleType(sampleTypes.monoSample);
+        }
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -231,6 +239,15 @@ export class BasicSample {
         } else if (type === sampleTypes.linkedSample) {
             this.setSampleType(sampleTypes.linkedSample);
             sample.setSampleType(sampleTypes.linkedSample);
+        } else if (type === sampleTypes.wavLeftSample) {
+            this.setSampleType(sampleTypes.wavLeftSample);
+            sample.setSampleType(sampleTypes.wavRightSample);
+        } else if (type === sampleTypes.wavRightSample) {
+            this.setSampleType(sampleTypes.wavRightSample);
+            sample.setSampleType(sampleTypes.wavLeftSample);
+        } else if (type === sampleTypes.wavLinkedSample) {
+            this.setSampleType(sampleTypes.wavLinkedSample);
+            sample.setSampleType(sampleTypes.wavLinkedSample);
         } else {
             throw new Error("Invalid sample type: " + type);
         }
