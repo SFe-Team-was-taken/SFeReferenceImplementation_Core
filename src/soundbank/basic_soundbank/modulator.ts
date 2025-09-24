@@ -301,6 +301,17 @@ const defaultSoundFont2Modulators = [
     new DecodedModulator(0x00dd, 0x0, generatorTypes.chorusEffectsSend, 200, 0)
 ];
 
+const sf24VelFcModulator = [
+    // SF2.04 velocity to filter cutoff
+    new DecodedModulator(0x0102, 0x0, generatorTypes.initialFilterFc, -2400, 0)
+];
+
+const sf21VelFcModulator = [
+    // SF2.01 velocity to filter cutoff
+    // Not in use currently
+    new DecodedModulator(0x0502, 0x0, generatorTypes.initialFilterFc, -2400, 0)
+];
+
 const defaultSpessaSynthModulators = [
     // Custom modulators heck yeah
     // Poly pressure to vibrato
@@ -390,3 +401,9 @@ const defaultSpessaSynthModulators = [
 
 export const SPESSASYNTH_DEFAULT_MODULATORS: Modulator[] =
     defaultSoundFont2Modulators.concat(defaultSpessaSynthModulators);
+
+export const SOUNDFONT24_DEFAULT_MODULATORS: Modulator[] = 
+    defaultSoundFont2Modulators.concat(sf24VelFcModulator);
+
+export const SOUNDFONT21_DEFAULT_MODULATORS: Modulator[] = 
+    defaultSoundFont2Modulators.concat(sf21VelFcModulator);
