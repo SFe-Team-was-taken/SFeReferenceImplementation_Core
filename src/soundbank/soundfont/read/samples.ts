@@ -6,7 +6,7 @@ import { BasicSample } from "../../basic_soundbank/basic_sample";
 import { consoleColors } from "../../../utils/other";
 import type { SampleType } from "../../enums";
 import type { RIFFChunk } from "../../../utils/riff_chunk";
-import type { AllowedContainers, ContainerTypes } from "../../exports";
+import type { AllowedContainers } from "../../exports";
 
 /**
  * Samples.ts
@@ -31,8 +31,6 @@ export class SoundFontSample extends BasicSample {
     protected endByteOffset: number;
 
     protected sampleID: number;
-
-    protected containerType: ContainerTypes;
 
     /**
      * Creates a sample
@@ -88,8 +86,6 @@ export class SoundFontSample extends BasicSample {
             sampleDataArray instanceof IndexedByteArray
                 ? sampleDataArray.currentIndex
                 : 0;
-        // Vorbis default
-        this.containerType = "vorbis";
 
         // Three data types in:
         // SF2 (s16le)
@@ -118,49 +114,28 @@ export class SoundFontSample extends BasicSample {
 
                             case "pusHead":
                                 // Opus
-                                this.containerType = "opus";
+                                throw new Error(`Opus is currently unsupported.`);
                                 break;
 
                             case "vorbis":
                                 // Vorbis - supported
-                                this.containerType = "vorbis";
                         }
                         break;
                     }
                     case "fLaC":
                         // FLAC
-                        this.containerType = "flac";
+                        throw new Error(`FLAC is currently unsupported.`);
                         break;
                     case "RIFF": {
                         const wave: string = readBinaryString(sampleData, 4, 8);
                         if(wave !== "WAVE"){
                             throw new Error(`Unsupported sample type: ${wave}`);
                         } else {
-                            this.containerType = "wav";
                             // WAV
                         }
                     }
                 }
                 
-                // Check for compatibility
-                switch (this.containerType)
-                {
-                    case "vorbis":
-                        break;
-                    case "opus":
-                        throw new Error("Opus is currently unsupported.")
-                        break;
-                    case "flac":
-                        throw new Error("FLAC is currently unsupported.")
-                        break;
-                    case "wav":
-                        throw new Error("WAV is currently unsupported.")
-                        break;
-                    default:
-                        // This should never happen
-                        throw new Error("You should never see this.")
-                }
-
                 // Correct loop points
                 this.loopStart += this.startByteOffset / 2;
                 this.loopEnd += this.startByteOffset / 2;

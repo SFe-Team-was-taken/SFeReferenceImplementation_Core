@@ -220,7 +220,7 @@ export interface SoundFont2WriteOptions {
     /**
      * Soundbank version.
      */
-    bankVersion: SFVersion;
+    bankVersion: "sfe-4.0"|"soundfont2";
 
     /**
      * Use 64-bit. Only recommended if supported.
@@ -255,10 +255,6 @@ export interface DLSLoop {
      */
     loopLength: number;
 }
-
-export type SFVersion =
-    | "soundfont2"
-    | "sfe-4.0";
 
 export interface SFeFeatureFlag {
     /**
@@ -312,9 +308,3 @@ export interface AllowedContainers {
      */
     wav: boolean;
 }
-
-export type ContainerTypes =
-    | "vorbis"
-    | "opus"
-    | "flac"
-    | "wav";

@@ -4,7 +4,6 @@ import { readLittleEndianIndexed } from "../../utils/byte_functions/little_endia
 import { IndexedByteArray } from "../../utils/indexed_array";
 import type { RIFFChunk } from "../../utils/riff_chunk";
 import { sampleTypes } from "../enums";
-import type { AllowedContainers } from "../types"
 
 const W_FORMAT_TAG = {
     PCM: 0x01,
@@ -165,9 +164,9 @@ export class DLSSample extends BasicSample {
         return this.audioData ?? new Float32Array(0);
     }
 
-    public getRawData(allowContainers: AllowedContainers) {
+    public getRawData(allowVorbis: boolean) {
         if (this.dataOverridden || this.isCompressed) {
-            return super.getRawData(allowContainers);
+            return super.getRawData(allowVorbis);
         }
         if (this.wFormatTag === W_FORMAT_TAG.PCM && this.bytesPerSample === 2) {
             // Copy straight away

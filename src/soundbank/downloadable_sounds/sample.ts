@@ -106,14 +106,7 @@ export class DownloadableSoundsSample extends DLSVerifier {
     }
 
     public static fromSFSample(sample: BasicSample) {
-        const raw = sample.getRawData(
-            {
-                vorbis: false,
-                opus: false,
-                flac: false,
-                wav: false
-            }
-        );
+        const raw = sample.getRawData(false);
         const dlsSample = new DownloadableSoundsSample(
             0x01, // PCM
             2, // 2 bytes per sample
