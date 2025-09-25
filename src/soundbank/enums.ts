@@ -4,24 +4,10 @@ export const sampleTypes = {
     rightSample: 2,
     leftSample: 4,
     linkedSample: 8,
-    vorbisSample: 17,
-    flacSample: 49,
-    opusSample: 81,
-    wavMonoSample: 113,
-    wavRightSample: 114,
-    wavLeftSample: 116,
-    wavLinkedSample: 120,
     romMonoSample: 32769,
     romRightSample: 32770,
     romLeftSample: 32772,
-    romLinkedSample: 32776,
-    romVorbisSample: 32785,
-    romFlacSample: 32817,
-    romOpusSample: 32849,
-    romWavMonoSample: 32881,
-    romWavRightSample: 32882,
-    romWavLeftSample: 32884,
-    romWavLinkedSample: 32888
+    romLinkedSample: 32776
 } as const;
 
 export type SampleType = (typeof sampleTypes)[keyof typeof sampleTypes];

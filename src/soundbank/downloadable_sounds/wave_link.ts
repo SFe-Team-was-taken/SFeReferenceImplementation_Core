@@ -78,14 +78,11 @@ export class WaveLink {
             default:
             case sampleTypes.leftSample:
             case sampleTypes.monoSample:
-            case sampleTypes.wavLeftSample:
-            case sampleTypes.wavMonoSample:
                 // Left (or mono)
                 waveLink.channel = 1 << 0;
                 break;
 
             case sampleTypes.rightSample:
-            case sampleTypes.wavRightSample:
                 // Right channel
                 waveLink.channel = 1 << 1;
         }
