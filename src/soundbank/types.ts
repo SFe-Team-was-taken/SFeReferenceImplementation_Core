@@ -220,7 +220,7 @@ export interface SoundFont2WriteOptions {
     /**
      * Soundbank version.
      */
-    bankVersion: "sfe-4.0"|"soundfont2";
+    bankVersion: SFVersion;
 
     /**
      * Use 64-bit. Only recommended if supported.
@@ -255,6 +255,10 @@ export interface DLSLoop {
      */
     loopLength: number;
 }
+
+export type SFVersion =
+    | "soundfont2"
+    | "sfe-4.0";
 
 export interface SFeFeatureFlag {
     /**
