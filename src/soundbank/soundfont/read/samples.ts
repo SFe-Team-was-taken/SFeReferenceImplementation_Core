@@ -6,7 +6,6 @@ import { BasicSample } from "../../basic_soundbank/basic_sample";
 import { consoleColors } from "../../../utils/other";
 import type { SampleType } from "../../enums";
 import type { RIFFChunk } from "../../../utils/riff_chunk";
-import type { AllowedContainers } from "../../exports";
 
 /**
  * Samples.ts
@@ -231,10 +230,10 @@ export class SoundFontSample extends BasicSample {
         return audioData;
     }
 
-    public getRawData(allowContainers: AllowedContainers): Uint8Array {
+    public getRawData(allowVorbis: boolean): Uint8Array {
         if (this.dataOverridden || this.compressedData) {
             // Return vorbis or encode manually
-            return super.getRawData(allowContainers);
+            return super.getRawData(allowVorbis);
         }
         // Copy the smpl directly
         return this.s16leData ?? new Uint8Array(0);

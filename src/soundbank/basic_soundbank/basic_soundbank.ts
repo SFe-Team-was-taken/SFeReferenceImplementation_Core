@@ -248,14 +248,7 @@ export class BasicSoundBank {
             sample.loopEnd
         );
         if (sample.isCompressed) {
-            newSample.setCompressedData(sample.getRawData(
-                {
-                    vorbis: true,
-                    opus: false,
-                    flac: false,
-                    wav: false
-                }
-            ));
+            newSample.setCompressedData(sample.getRawData(true));
         } else {
             newSample.setAudioData(sample.getAudioData(), sample.sampleRate);
         }
