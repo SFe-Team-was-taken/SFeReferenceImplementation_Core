@@ -64,6 +64,30 @@ export function getStringBytes(
 }
 
 /**
+ * Gets UTF-8 bytes from string.
+ * @param string the string.
+ * @param addZero adds a zero terminator at the end.
+ * @param ensureEven ensures even byte count.
+ * @returns the binary data.
+ */
+export function getStringBytesUtf8(
+    string: string,
+    addZero = false,
+    ensureEven = false
+): IndexedByteArray {
+    let len = string.length;
+    if (addZero) {
+        len++;
+    }
+    if (ensureEven && len % 2 !== 0) {
+        len++;
+    }
+    const arr = new IndexedByteArray(len);
+    writeBinaryStringIndexedUtf8(arr, string);
+    return arr;
+}
+
+/**
  * Writes ASCII bytes into a specified array.
  * @param string the string.
  * @param outArray the target array
