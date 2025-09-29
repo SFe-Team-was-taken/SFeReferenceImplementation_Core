@@ -422,7 +422,8 @@ export class SoundFont2 extends BasicSoundBank {
                 xdtaChunk === undefined,
                 true,
                 xChunks.shdr,
-                false
+                false,
+                this.soundBankInfo.version.major
             );
         } else {
             samples = readSamples(
@@ -431,7 +432,8 @@ export class SoundFont2 extends BasicSoundBank {
                 xdtaChunk === undefined,
                 false,
                 new RIFFChunk("shdr", 1, new IndexedByteArray(1)),
-                false
+                false,
+                this.soundBankInfo.version.major
             );
         }
         // Trim names

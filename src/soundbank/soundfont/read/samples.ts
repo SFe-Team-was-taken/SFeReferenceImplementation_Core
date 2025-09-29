@@ -113,7 +113,7 @@ export class SoundFontSample extends BasicSample {
 
                             case "pusHead":
                                 // Opus
-                                throw new Error(`Opus is currently unsupported.`);
+                                throw new Error(`Opus is currently unsupported. More information at https://github.com/SFe-Team-was-taken/SFeReferenceImplementation_Core/issues/1.`);
                                 break;
 
                             case "vorbis":
@@ -123,7 +123,7 @@ export class SoundFontSample extends BasicSample {
                     }
                     case "fLaC":
                         // FLAC
-                        throw new Error(`FLAC is currently unsupported.`);
+                        throw new Error(`FLAC is currently unsupported. More information at https://github.com/SFe-Team-was-taken/SFeReferenceImplementation_Core/issues/1.`);
                         break;
                     case "RIFF": {
                         const wave: string = readBinaryString(sampleData, 4, 8);
@@ -144,7 +144,7 @@ export class SoundFontSample extends BasicSample {
                     sampleData
                 );
             } else {
-                // Regular sf2 s16le
+                // Regular sf2 s16le 
                 this.s16leData = sampleDataArray.slice(
                     smplStart + this.startByteOffset,
                     smplStart + this.endByteOffset
@@ -249,11 +249,14 @@ export function readSamples(
     linkSamples = true,
     useXdta = false,
     xdtaChunk: RIFFChunk | undefined = undefined,
-    is64Bit = false
+    is64Bit = false,
+    sfeMajorVersion = 4
 ): SoundFontSample[] {
     const samples: SoundFontSample[] = [];
     let index = 0;
     let xdtaChunkData;
+    let uncontainerisedSamples = false;
+    let mixedSamples = false;
     if (useXdta && xdtaChunk) {
         xdtaChunkData = xdtaChunk.data;
     } else {
@@ -270,6 +273,11 @@ export function readSamples(
             xdtaChunkData,
             is64Bit
         );
+        if (!sample.isCompressed && sfeMajorVersion >= 4 && !uncontainerisedSamples) {
+            uncontainerisedSamples = true;
+        } else if (sample.isCompressed && sfeMajorVersion >= 4 && uncontainerisedSamples) {
+            mixedSamples = true;
+        }
         samples.push(sample);
         index++;
     }
@@ -279,6 +287,13 @@ export function readSamples(
     // Link samples
     if (linkSamples) {
         samples.forEach((s) => s.getLinkedSample(samples));
+    }
+
+    if (uncontainerisedSamples) {
+        SpessaSynthWarn("This SFe bank contains uncontainerised samples. Future SFe sample features may not be usable.");
+    }
+    if (mixedSamples) {
+        SpessaSynthWarn("This SFe bank contains mixed sample containerisation, which has been deprecated.");
     }
 
     return samples;
