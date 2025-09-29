@@ -75,7 +75,7 @@ export function writeDword(dataArray: IndexedByteArray, dword: number) {
  * Writes a QWORD (INT)
  */
 export function writeQword(dataArray: IndexedByteArray, qword: number) {
-    let dwords = splitQword(qword);
+    const dwords = splitQword(qword);
 
     writeLittleEndianIndexed(dataArray, dwords.lower, 4);
     writeLittleEndianIndexed(dataArray, dwords.upper, 4);
@@ -127,7 +127,7 @@ export function splitQword(qword: number): {
         }
         subtractValue /= 2;
     }
-    let upperDword = (qword - lowerDword) / 4294967296;
+    const upperDword = (qword - lowerDword) / 4294967296;
     return {
         upper: upperDword,
         lower: lowerDword

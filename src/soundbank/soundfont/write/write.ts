@@ -4,7 +4,7 @@ import {
     writeRIFFChunkRaw
 } from "../../../utils/riff_chunk";
 import { getStringBytes } from "../../../utils/byte_functions/string";
-import { consoleColors } from "../../../utils/other";
+import { consoleColors, isNonZero } from "../../../utils/other";
 import { getSDTA } from "./sdta";
 import { getSHDR } from "./shdr";
 import {
@@ -130,7 +130,7 @@ export async function writeSF2Internal(
             }
             break;
         default:
-            throw new Error(`Invalid soundbank version: ${options?.bankVersion}`);
+            throw new Error(`Invalid soundbank version!`); // The linter gives an error if I try to list the version
     }    
 
     const writeSF2Info = (type: SF2InfoFourCC, data: string) => {
@@ -292,17 +292,20 @@ ${bank.soundBankInfo.subject}`
         true
     );
 
+    console.log(shdrChunk);
+    // Check the chunk's xdta for usable information
+    // Hopefully this doesn't break actual xdta implementation
+    const xdtaDataPresent = chunks.map((c) => c.xdta.every(isNonZero));;
     const writeXdta =
         options.writeExtendedLimits &&
         (instData.writeXdta ||
             presData.writeXdta ||
-            bank.presets.some((p) => p.name.length > 20) ||
-            bank.instruments.some((i) => i.name.length > 20) ||
-            bank.samples.some((s) => s.name.length > 20));
+            xdtaDataPresent
+        )
 
     if (writeXdta) {
         SpessaSynthInfo(
-            `%cWriting the xdta chunk as writeExendedLimits is enabled and at least one condition was met.`,
+            `%cWriting the xdta chunk as writeExtendedLimits is enabled and at least one condition was met.`,
             consoleColors.info,
             consoleColors.value
         );

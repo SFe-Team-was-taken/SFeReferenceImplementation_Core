@@ -16,7 +16,6 @@ import { generatorLimits, generatorTypes } from "./generator_types";
 import type { ExtendedSF2Chunks } from "../soundfont/write/types";
 import { SpessaSynthInfo } from "../../utils/loggin";
 import { consoleColors } from "../../utils/other";
-import { writeBinaryStringIndexed } from "../../utils/byte_functions/string";
 import {
     writeDword,
     writeWord
@@ -532,8 +531,25 @@ export class BasicPreset implements MIDIPatchNamed {
     public write(phdrData: ExtendedSF2Chunks, index: number) {
         SpessaSynthInfo(`%cWriting ${this.name}...`, consoleColors.info);
         // Split up the name
-        writeBinaryStringIndexed(phdrData.pdta, this.name.substring(0, 20), 20);
-        writeBinaryStringIndexed(phdrData.xdta, this.name.substring(20), 20);
+        // Encode to UTF-8
+        const encoder = new TextEncoder();
+        const encodedText = encoder.encode(this.name);
+        if (encodedText.length <= 20)
+        {
+            phdrData.pdta.set(encodedText,phdrData.pdta.currentIndex);
+        } 
+        else if (encodedText.length <= 40)
+        {
+            phdrData.pdta.set(encodedText.slice(0,20),phdrData.pdta.currentIndex);
+            phdrData.xdta.set(encodedText.slice(20),phdrData.xdta.currentIndex);
+        } 
+        else 
+        {
+            phdrData.pdta.set(encodedText.slice(0,20),phdrData.pdta.currentIndex);
+            phdrData.xdta.set(encodedText.slice(20,40),phdrData.xdta.currentIndex);
+        }
+        phdrData.pdta.currentIndex += 20;
+        phdrData.xdta.currentIndex += 20;   
 
         writeWord(phdrData.pdta, this.program);
         let wBank = this.bankMSB;

@@ -131,7 +131,7 @@ export function writeBinaryStringIndexedUtf8(
 ): IndexedByteArray {
     const encoder = new TextEncoder();
     let encodedText = encoder.encode(string);
-    let len = encodedText.length;
+    const len = encodedText.length;
 
     if (padLength > 0) {
         if (len > padLength) {
@@ -159,8 +159,8 @@ export function writeBinaryStringIndexedUtf8(
 export function decodeUtf8(utf8Array: IndexedByteArray)
 {
     let decoded;
-    let dataArray = new IndexedByteArray(utf8Array.length);
-    let utf8Char = new Uint8Array(4);
+    const dataArray = new IndexedByteArray(utf8Array.length);
+    const utf8Char = new Uint8Array(4);
     let decodedChar = " ";
     let decodedLength = 0;
     let error = 0;
@@ -174,56 +174,56 @@ export function decodeUtf8(utf8Array: IndexedByteArray)
         if (dataArray[dataArray.currentIndex] != 0)
         {
             utf8Char[0] = dataArray[dataArray.currentIndex++];
-            if (utf8Char[0] < 128) // ascii character bytes
+            if (utf8Char[0] < 128) // Ascii character bytes
             {
                 decodedChar = String.fromCodePoint(utf8Char[0]);
             } 
-            else if (utf8Char[0] < 194) // continuation and invalid bytes
+            else if (utf8Char[0] < 194) // Continuation and invalid bytes
             {
                 decodedChar = String.fromCodePoint(65533); // 65533 = U+FFFD, the Unicode replacement character
             }
-            else if (utf8Char[0] < 224) // two byte code points
+            else if (utf8Char[0] < 224) // Two byte code points
             {
                 utf8Char[1] = dataArray[dataArray.currentIndex++];
-                if (utf8Char[1] < 128) // invalid bytes
+                if (utf8Char[1] < 128) // Invalid bytes
                 {
                     error = 1;
                     decodedChar = String.fromCodePoint(65533);
                     secondChar = utf8Char[1];
                 }
-                else if (utf8Char[1] < 192) // continuation bytes
+                else if (utf8Char[1] < 192) // Continuation bytes
                 {
-                    let decodedPoint = (utf8Char[1] & 15) + (utf8Char[1] & 48) + ((utf8Char[0] & 3) << 6) + ((utf8Char[0] & 28) << 6);
+                    const decodedPoint = (utf8Char[1] & 15) + (utf8Char[1] & 48) + ((utf8Char[0] & 3) << 6) + ((utf8Char[0] & 28) << 6);
                     decodedChar = String.fromCodePoint(decodedPoint);
                 }
-                else // invalid bytes
+                else // Invalid bytes
                 {
                     decodedChar = String.fromCodePoint(65533);                
                 }
             }
-            else if (utf8Char[0] < 240) // three byte code points
+            else if (utf8Char[0] < 240) // Three byte code points
             {
                 utf8Char[1] = dataArray[dataArray.currentIndex++];
-                if (utf8Char[1] < 128) // invalid bytes
+                if (utf8Char[1] < 128) // Invalid bytes
                 {
                     error = 1;
                     decodedChar = String.fromCodePoint(65533);
                     secondChar = utf8Char[1];
                 }
-                else if (utf8Char[1] < 160 && utf8Char[0] == 224) // overlong encoding bytes
+                else if (utf8Char[1] < 160 && utf8Char[0] == 224) // Overlong encoding bytes
                 {
                     decodedChar = String.fromCodePoint(65533);
                 }
-                else if (utf8Char[1] < 192) // continuation bytes
+                else if (utf8Char[1] < 192) // Continuation bytes
                 {
                     utf8Char[2] = dataArray[dataArray.currentIndex++];
-                    if (utf8Char[2] < 128) // invalid bytes
+                    if (utf8Char[2] < 128) // Invalid bytes
                     {
                         error = 1;
                         decodedChar = String.fromCodePoint(65533);
                         secondChar = utf8Char[2];
                     }
-                    else if (utf8Char[2] < 192) // continuation bytes
+                    else if (utf8Char[2] < 192) // Continuation bytes
                     {
                         let decodedPoint = (utf8Char[2] & 15) + (utf8Char[2] & 48) + ((utf8Char[1] & 3) << 6) + ((utf8Char[1] & 60) << 6) + ((utf8Char[0] & 15) << 12);
                         if (decodedPoint >= 55296 && decodedPoint <= 57343) // UTF-16 surrogates are invalid
@@ -232,56 +232,56 @@ export function decodeUtf8(utf8Array: IndexedByteArray)
                         }
                         decodedChar = String.fromCodePoint(decodedPoint);
                     }
-                    else // invalid bytes
+                    else // Invalid bytes
                     {
                         decodedChar = String.fromCodePoint(65533);
                     }
                 }
-                else // invalid bytes
+                else // Invalid bytes
                 {
                     decodedChar = String.fromCodePoint(65533);               
                 }
             }
-            else if (utf8Char[0] < 245) // four byte code points
+            else if (utf8Char[0] < 245) // Four byte code points
             {
                 utf8Char[1] = dataArray[dataArray.currentIndex++];
-                if (utf8Char[1] < 128) // invalid bytes
+                if (utf8Char[1] < 128) // Invalid bytes
                 {
                     error = 1;
                     decodedChar = String.fromCodePoint(65533);
                     secondChar = utf8Char[1];
                 }
-                else if (utf8Char[1] < 144 && utf8Char[0] == 240) // overlong encoding bytes
+                else if (utf8Char[1] < 144 && utf8Char[0] == 240) // Overlong encoding bytes
                 {
                     decodedChar = String.fromCodePoint(65533);
                 }
-                else if (utf8Char[1] < 192) // continuation bytes
+                else if (utf8Char[1] < 192) // Continuation bytes
                 {
                     utf8Char[2] = dataArray[dataArray.currentIndex++];
-                    if (utf8Char[2] < 128) // invalid bytes
+                    if (utf8Char[2] < 128) // Invalid bytes
                     {
                         error = 1;
                         decodedChar = String.fromCodePoint(65533);
                         secondChar = utf8Char[2];
                     }
-                    else if (utf8Char[2] < 192) // continuation bytes
+                    else if (utf8Char[2] < 192) // Continuation bytes
                     {
                         utf8Char[3] = dataArray[dataArray.currentIndex++];
-                        if (utf8Char[3] < 128) // invalid bytes
+                        if (utf8Char[3] < 128) // Invalid bytes
                         {
                             error = 1;
                             decodedChar = String.fromCodePoint(65533);
                             secondChar = utf8Char[3];
                         }
-                        else if (utf8Char[3] < 192) // continuation bytes
+                        else if (utf8Char[3] < 192) // Continuation bytes
                         {
-                            if (utf8Char[0] == 244) // out of range
+                            if (utf8Char[0] == 244) // Out of range
                             {
                                 decodedChar = String.fromCodePoint(65533);
                             }
                             else 
                             {
-                                let decodedPoint = (utf8Char[3] & 15) + (utf8Char[3] & 48)+ ((utf8Char[2] & 3) << 6) + ((utf8Char[2] & 60) << 6) + ((utf8Char[1] & 15) << 12) + ((utf8Char[1] & 48) << 12) + ((utf8Char[0] & 3) << 18) + ((utf8Char[0] & 4) << 18);
+                                const decodedPoint = (utf8Char[3] & 15) + (utf8Char[3] & 48)+ ((utf8Char[2] & 3) << 6) + ((utf8Char[2] & 60) << 6) + ((utf8Char[1] & 15) << 12) + ((utf8Char[1] & 48) << 12) + ((utf8Char[0] & 3) << 18) + ((utf8Char[0] & 4) << 18);
                                 decodedChar = String.fromCodePoint(decodedPoint);
                             }
                         }
@@ -290,17 +290,17 @@ export function decodeUtf8(utf8Array: IndexedByteArray)
                             decodedChar = String.fromCodePoint(65533);
                         }
                     }
-                    else // invalid bytes
+                    else // Invalid bytes
                     {
                         decodedChar = String.fromCodePoint(65533);
                     }
                 }
-                else // invalid bytes
+                else // Invalid bytes
                 {
                     decodedChar = String.fromCodePoint(65533);         
                 }
             }
-            else // invalid bytes
+            else // Invalid bytes
             {
                 decodedChar = String.fromCodePoint(65533);
             }

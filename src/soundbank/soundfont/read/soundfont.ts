@@ -61,7 +61,7 @@ export class SoundFont2 extends BasicSoundBank {
         and the only other difference is that the main chunk isn't "sfbk" but rather "sfpk"
          */
         const isSF2Pack = type === "sfpk";
-        const isSFe64 = type === "sfen";
+        // Const isSFe64 = type === "sfen";
 
         // INFO
         const infoChunk = readRIFFChunk(mainFileArray);
@@ -204,7 +204,7 @@ export class SoundFont2 extends BasicSoundBank {
             isfeChunks.flag = readRIFFChunk(isfeChunk.data);
             // Verify ISFe-list chunks
 
-            let sftyStr = readBinaryString(isfeChunks.sfty?.data);
+            const sftyStr = readBinaryString(isfeChunks.sfty?.data);
             if (sftyStr === "SFe standard") {
                 // Trailing sdta chunk is not supported
                 SpessaSynthInfo(
@@ -220,7 +220,7 @@ export class SoundFont2 extends BasicSoundBank {
             }
 
             if (isfeChunks.sfvx?.data.length !== 46) {
-                // must be 46 bytes in length otherwise invalid
+                // Must be 46 bytes in length otherwise invalid
                 SpessaSynthInfo(
                     `Invalid SFe extended version chunk!`,
                     consoleColors.warn
@@ -297,8 +297,8 @@ export class SoundFont2 extends BasicSoundBank {
             }
 
             // For now, flags are only used for compatibility check
-            let sfeFlags: SFeFeatureFlag[] = [];
-            let supportedFlags: FeatureFlagList[] = [];
+            const sfeFlags: SFeFeatureFlag[] = [];
+            const supportedFlags: FeatureFlagList[] = [];
             if (isfeChunks.flag?.data.length % 6 !== 0) {
                 // Feature flags must be a multiple of 6 bytes in length
                 SpessaSynthInfo(
@@ -413,25 +413,26 @@ export class SoundFont2 extends BasicSoundBank {
          * (the current index points to start of the smpl read)
          */
         mainFileArray.currentIndex = this.sampleDataStartIndex;
-        const samples = readSamples(
-            shdrChunk,
-            sampleData,
-            xdtaChunk === undefined
-        );
-
-        if (xdtaChunk && xChunks.shdr) {
-            // Apply extensions to samples
-            const xSamples = readSamples(
+        
+        let samples;
+        if (xdtaChunk && xChunks.shdr && shdrChunk.data.length === xChunks.shdr?.data.length) {
+            samples = readSamples(
+                shdrChunk,
+                sampleData,
+                xdtaChunk === undefined,
+                true,
                 xChunks.shdr,
-                new Float32Array(1),
                 false
             );
-            if (xSamples.length === samples.length) {
-                samples.forEach((s, i) => {
-                    s.name += xSamples[i].name;
-                    s.linkedSampleIndex |= xSamples[i].linkedSampleIndex << 16;
-                });
-            }
+        } else {
+            samples = readSamples(
+                shdrChunk,
+                sampleData,
+                xdtaChunk === undefined,
+                false,
+                new RIFFChunk("shdr", 1, new IndexedByteArray(1)),
+                false
+            );
         }
         // Trim names
         samples.forEach((s) => (s.name = s.name.trim()));
@@ -447,25 +448,11 @@ export class SoundFont2 extends BasicSoundBank {
          */
         const instrumentModulators: Modulator[] = readModulators(imodChunk);
 
-        const instruments = readInstruments(instChunk);
-
-        if (xdtaChunk && xChunks.inst) {
-            // Apply extensions to instruments
-            const xInst = readInstruments(xChunks.inst);
-            if (xInst.length === instruments.length) {
-                instruments.forEach((inst, i) => {
-                    inst.name += xInst[i].name;
-                    inst.zoneStartIndex |= xInst[i].zoneStartIndex;
-                });
-                // Adjust zone counts
-                instruments.forEach((inst, i) => {
-                    if (i < instruments.length - 1) {
-                        inst.zonesCount =
-                            instruments[i + 1].zoneStartIndex -
-                            inst.zoneStartIndex;
-                    }
-                });
-            }
+        let instruments;
+        if (xdtaChunk && xChunks.inst && instChunk.data.length === xChunks.inst?.data.length) {
+            instruments = readInstruments(instChunk, true, xChunks.inst);
+        } else {
+            instruments = readInstruments(instChunk, false, undefined);
         }
         // Trim names
         instruments.forEach((i) => (i.name = i.name.trim()));
@@ -504,25 +491,11 @@ export class SoundFont2 extends BasicSoundBank {
          */
         const presetModulators: Modulator[] = readModulators(pmodChunk);
 
-        const presets = readPresets(phdrChunk, this);
-
-        if (xdtaChunk && xChunks.phdr) {
-            // Apply extensions to presets
-            const xPreset = readPresets(xChunks.phdr, this);
-            if (xPreset.length === presets.length) {
-                presets.forEach((pres, i) => {
-                    pres.name += xPreset[i].name;
-                    pres.zoneStartIndex |= xPreset[i].zoneStartIndex;
-                });
-                // Adjust zone counts
-                presets.forEach((preset, i) => {
-                    if (i < presets.length - 1) {
-                        preset.zonesCount =
-                            presets[i + 1].zoneStartIndex -
-                            preset.zoneStartIndex;
-                    }
-                });
-            }
+        let presets;
+        if (xdtaChunk && xChunks.phdr && phdrChunk.data.length === xChunks.phdr?.data.length) {
+            presets = readPresets(phdrChunk, this, true, xChunks.phdr);
+        } else {
+            presets = readPresets(phdrChunk, this, false, undefined);
         }
 
         // Trim names

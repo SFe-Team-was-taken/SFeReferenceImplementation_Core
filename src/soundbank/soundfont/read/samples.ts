@@ -1,7 +1,7 @@
 import { IndexedByteArray } from "../../../utils/indexed_array";
 import { readLittleEndianIndexed, signedInt8 } from "../../../utils/byte_functions/little_endian";
 import { SpessaSynthInfo, SpessaSynthWarn } from "../../../utils/loggin";
-import { readBinaryString, readBinaryStringIndexed } from "../../../utils/byte_functions/string";
+import { readBinaryString, decodeUtf8 } from "../../../utils/byte_functions/string";
 import { BasicSample } from "../../basic_soundbank/basic_sample";
 import { consoleColors } from "../../../utils/other";
 import type { SampleType } from "../../enums";
@@ -246,17 +246,29 @@ export class SoundFontSample extends BasicSample {
 export function readSamples(
     sampleHeadersChunk: RIFFChunk,
     smplChunkData: IndexedByteArray | Float32Array,
-    linkSamples = true
+    linkSamples = true,
+    useXdta = false,
+    xdtaChunk: RIFFChunk | undefined = undefined,
+    is64Bit = false
 ): SoundFontSample[] {
     const samples: SoundFontSample[] = [];
     let index = 0;
+    let xdtaChunkData;
+    if (useXdta && xdtaChunk) {
+        xdtaChunkData = xdtaChunk.data;
+    } else {
+        xdtaChunkData = undefined;
+    }
     while (
         sampleHeadersChunk.data.length > sampleHeadersChunk.data.currentIndex
     ) {
         const sample = readSample(
             index,
             sampleHeadersChunk.data,
-            smplChunkData
+            smplChunkData,
+            useXdta,
+            xdtaChunkData,
+            is64Bit
         );
         samples.push(sample);
         index++;
@@ -278,10 +290,22 @@ export function readSamples(
 function readSample(
     index: number,
     sampleHeaderData: IndexedByteArray,
-    smplArrayData: IndexedByteArray | Float32Array
+    smplArrayData: IndexedByteArray | Float32Array,
+    useXdta: boolean,
+    xdtaChunkData: IndexedByteArray | undefined,
+    is64Bit: boolean
 ): SoundFontSample {
     // Read the sample name
-    const sampleName = readBinaryStringIndexed(sampleHeaderData, 20);
+    console.log(is64Bit);
+    const sampleNameArray = new IndexedByteArray(40);
+    sampleNameArray.set(sampleHeaderData.slice(sampleHeaderData.currentIndex, sampleHeaderData.currentIndex + 20), 0)
+    sampleHeaderData.currentIndex += 20;
+    if (useXdta && xdtaChunkData)
+    {
+        sampleNameArray.set(xdtaChunkData.slice(xdtaChunkData.currentIndex, xdtaChunkData.currentIndex + 20), 20)
+        xdtaChunkData.currentIndex += 20;
+    }
+    const sampleName = decodeUtf8(sampleNameArray) ?? "Sample";
 
     // Read the sample start index
     const sampleStartIndex = readLittleEndianIndexed(sampleHeaderData, 4) * 2;
@@ -310,13 +334,24 @@ function readSample(
         sampleHeaderData[sampleHeaderData.currentIndex++]
     );
 
+    // Skip 22 bytes on xdta for now 
+    if (useXdta && xdtaChunkData) {
+        xdtaChunkData.currentIndex += 22;
+    }
     // Read the link to the other channel
-    const sampleLink = readLittleEndianIndexed(sampleHeaderData, 2);
+    let sampleLink = readLittleEndianIndexed(sampleHeaderData, 2);
+    if (useXdta && xdtaChunkData) {
+       sampleLink += (readLittleEndianIndexed(xdtaChunkData, 2) << 16);
+    }
     const sampleType = readLittleEndianIndexed(
         sampleHeaderData,
         2
     ) as SampleType;
 
+    // Skip 2 bytes on xdta for now 
+    if (useXdta && xdtaChunkData) {
+        xdtaChunkData.currentIndex += 2;
+    }
     return new SoundFontSample(
         sampleName,
         sampleStartIndex,

@@ -163,7 +163,7 @@ export function writeRIFFChunkRaw(
     }
     if (isList)
     {
-        // list type (e.g. "INFO")
+        // List type (e.g. "INFO")
         writeBinaryStringIndexed(outArray, header);
     }
     outArray.set(data, dataStartOffset);
