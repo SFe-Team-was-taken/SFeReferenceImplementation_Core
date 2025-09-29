@@ -19,3 +19,16 @@ See #1 for more information.
 The reference implementation can currently read SFe banks, but has very limited write support.
 
 Such write support will be fully included once 64-bit support and all other features are implemented. 
+
+### Feature Flags Refactor
+
+Right now, the feature flags are really badly written, so this subsystem will need to be rewritten.
+
+### Untested Features
+
+Currently, the UTF-8 decoder has not been fully tested. We need to complete:
+
+- 4-byte unit tests
+- Error-path unit tests
+- Surrogate issue unit tests
+
