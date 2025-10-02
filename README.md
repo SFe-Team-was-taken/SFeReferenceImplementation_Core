@@ -147,7 +147,7 @@ It allows you to:
 
 #### Read and write SoundFont3 files
 
-- Same features as SoundFont2 but with now with **Ogg Vorbis compression!**
+- Same features as SoundFont2 but with now with **Ogg Vorbis compression!** (FLAC in development)
 - **Variable compression quality:** *You choose between file size and quality!*
 - **Compression preserving:** *Avoid decompressing and recompressing uncompressed samples for minimal quality loss!*
 - **Custom compression function:** *Want a different format than Vorbis? No problem!*
@@ -194,6 +194,7 @@ It allows you to:
 - [Meltysynth](https://github.com/sinshu/meltysynth) - for the initial low-pass filter implementation
 - [RecordingBlogs](https://www.recordingblogs.com/) - for detailed explanations on MIDI messages
 - [stbvorbis.js](https://github.com/hajimehoshi/stbvorbis.js) - for the Vorbis decoder
+- [libflac.js](https://github.com/mmig/libflac.js) - for the FLAC decoder (in development)
 - [fflate](https://github.com/101arrowz/fflate) - for the MIT DEFLATE implementation
 - [tsup](https://github.com/egoist/tsup) - for the TypeScript bundler
 - [foo_midi](https://github.com/stuerp/foo_midi) - for useful resources on XMF file format
