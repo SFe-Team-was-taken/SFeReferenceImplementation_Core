@@ -363,6 +363,25 @@ export class SoundFont2 extends BasicSoundBank {
         } else {
             sampleData = mainFileArray;
             this.sampleDataStartIndex = mainFileArray.currentIndex;
+            console.log(sampleData);
+            console.log(mainFileArray.currentIndex);
+        }
+        mainFileArray.currentIndex += sampleDataChunk.size;
+        console.log(mainFileArray.currentIndex);
+        // Sm24
+        if (((this.soundBankInfo.version.major > 3)
+            || (this.soundBankInfo.version.major == 2 && this.soundBankInfo.version.minor >= 4)
+            || (this.soundBankInfo.version.major == 3 && this.soundBankInfo.version.minor >= 4))
+            && (!isSF2Pack)) {
+                SpessaSynthInfo("%cThe sm24 chunk is supported. Verifying sm24 chunk...", consoleColors.warn);
+                if (readBinaryStringIndexed(mainFileArray, 4) === "sm24") {
+                    mainFileArray.currentIndex -= 4;
+                    const sm24DataChunk = readRIFFChunk(mainFileArray, false);
+                    console.log(sm24DataChunk.data);
+                    mainFileArray.currentIndex += sm24DataChunk.size;
+                } else {
+                    mainFileArray.currentIndex -= 4;
+                }
         }
 
         SpessaSynthInfo(
@@ -370,7 +389,8 @@ export class SoundFont2 extends BasicSoundBank {
             consoleColors.info,
             consoleColors.value
         );
-        mainFileArray.currentIndex += sdtaChunk.size - 12;
+        console.log(mainFileArray.currentIndex);
+
 
         // PDTA
         SpessaSynthInfo("%cLoading preset data chunk...", consoleColors.warn);
@@ -571,271 +591,39 @@ export class SoundFont2 extends BasicSoundBank {
     protected loadSupportedFlags(supportedList: FeatureFlagList[])
     {
         // Todo: do this in a better way
-        supportedList.push(
-            {
-                branch: 0,
-                leaf: 0,
-                flags: 15,
-                featureName: "Tuning"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 0,
-                leaf: 1,
-                flags: 3,
-                featureName: "Looping"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 0,
-                leaf: 2,
-                flags: 1,
-                featureName: "Filter Types"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 0,
-                leaf: 3,
-                flags: 884736096,
-                featureName: "Filter Params"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 0,
-                leaf: 4,
-                flags: 7,
-                featureName: "Attenuation"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 0,
-                leaf: 5,
-                flags: 69391,
-                featureName: "Effects"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 0,
-                leaf: 6,
-                flags: 15,
-                featureName: "LFO"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 0,
-                leaf: 7,
-                flags: 524287,
-                featureName: "Envelopes"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 0,
-                leaf: 8,
-                flags: 231169,
-                featureName: "MIDI CC"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 0,
-                leaf: 9,
-                flags: 127,
-                featureName: "Generators"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 0,
-                leaf: 10,
-                flags: 127,
-                featureName: "Zones"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 0,
-                leaf: 11,
-                flags: 0,
-                featureName: "Reserved"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 1,
-                leaf: 0,
-                flags: 16383,
-                featureName: "Modulators"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 1,
-                leaf: 1,
-                flags: 51,
-                featureName: "Modulator Controllers"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 1,
-                leaf: 2,
-                flags: 998838,
-                featureName: "Modulator Parameters"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 1,
-                leaf: 3,
-                flags: 672137215,
-                featureName: "Modulator Parameters"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 1,
-                leaf: 4,
-                flags: 0,
-                featureName: "Modulator Parameters"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 1,
-                leaf: 5,
-                flags: 0,
-                featureName: "NRPN"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 1,
-                leaf: 6,
-                flags: 263167,
-                featureName: "Default Modulators"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 1,
-                leaf: 7,
-                flags: 0,
-                featureName: "Reserved"
-
-            }
-        )
-        supportedList.push(
-            {
-                branch: 1,
-                leaf: 8,
-                flags: 0,
-                featureName: "Reserved"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 2,
-                leaf: 0,
-                flags: 1,
-                featureName: "24-Bit Samples"
-            }
-        )        
-        supportedList.push(
-            {
-                branch: 2,
-                leaf: 1,
-                flags: 0,
-                featureName: "8-Bit Samples"
-            }
-        )        
-        supportedList.push(
-            {
-                branch: 2,
-                leaf: 2,
-                flags: 0,
-                featureName: "32-Bit Samples"
-            }
-        )        
-        supportedList.push(
-            {
-                branch: 2,
-                leaf: 3,
-                flags: 0,
-                featureName: "64-Bit Samples"
-            }
-        )        
-        supportedList.push(
-            {
-                branch: 3,
-                leaf: 0,
-                flags: 1,
-                featureName: "SFe Compression"
-            }
-        )     
-        supportedList.push(
-            {
-                branch: 3,
-                leaf: 1,
-                flags: 1,
-                featureName: "Compression Formats"
-            }
-        )     
-        supportedList.push(
-            {
-                branch: 4,
-                leaf: 0,
-                flags: 0,
-                featureName: "Metadata"
-            }
-        )     
-        supportedList.push(
-            {
-                branch: 4,
-                leaf: 1,
-                flags: 0,
-                featureName: "Reserved"
-            }
-        )     
-        supportedList.push(
-            {
-                branch: 4,
-                leaf: 2,
-                flags: 0,
-                featureName: "Sample ROM"
-            }
-        )     
-        supportedList.push(
-            {
-                branch: 4,
-                leaf: 3,
-                flags: 0,
-                featureName: "ROM Emulator"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 4,
-                leaf: 4,
-                flags: 0,
-                featureName: "Reserved"
-            }
-        )
-        supportedList.push(
-            {
-                branch: 5,
-                leaf: 0,
-                flags: 0,
-                featureName: "End of Flags"
-            }
-        )
+        supportedList.push({branch: 0, leaf: 0,  flags: 15,        featureName: "Tuning"});
+        supportedList.push({branch: 0, leaf: 1,  flags: 3,         featureName: "Looping"});
+        supportedList.push({branch: 0, leaf: 2,  flags: 1,         featureName: "Filter Types"});
+        supportedList.push({branch: 0, leaf: 3,  flags: 884736096, featureName: "Filter Params"});
+        supportedList.push({branch: 0, leaf: 4,  flags: 7,         featureName: "Attenuation"});
+        supportedList.push({branch: 0, leaf: 5,  flags: 69391,     featureName: "Effects"});
+        supportedList.push({branch: 0, leaf: 6,  flags: 15,        featureName: "LFO"});
+        supportedList.push({branch: 0, leaf: 7,  flags: 524287,    featureName: "Envelopes"});
+        supportedList.push({branch: 0, leaf: 8,  flags: 231169,    featureName: "MIDI CC"});
+        supportedList.push({branch: 0, leaf: 9,  flags: 127,       featureName: "Generators"});
+        supportedList.push({branch: 0, leaf: 10, flags: 127,       featureName: "Zones"});
+        supportedList.push({branch: 0, leaf: 11, flags: 0,         featureName: "Reserved"});
+        supportedList.push({branch: 1, leaf: 0,  flags: 16383,     featureName: "Modulators"});
+        supportedList.push({branch: 1, leaf: 1,  flags: 51,        featureName: "Modulator Controllers"});
+        supportedList.push({branch: 1, leaf: 2,  flags: 998838,    featureName: "Modulator Parameters"});
+        supportedList.push({branch: 1, leaf: 3,  flags: 672137215, featureName: "Modulator Parameters"});
+        supportedList.push({branch: 1, leaf: 4,  flags: 0,         featureName: "Modulator Parameters"});
+        supportedList.push({branch: 1, leaf: 5,  flags: 0,         featureName: "NRPN"});
+        supportedList.push({branch: 1, leaf: 6,  flags: 263167,    featureName: "Default Modulators"});
+        supportedList.push({branch: 1, leaf: 7,  flags: 0,         featureName: "Reserved"});
+        supportedList.push({branch: 1, leaf: 8,  flags: 0,         featureName: "Reserved"});
+        supportedList.push({branch: 2, leaf: 0,  flags: 1,         featureName: "24-Bit Samples"});
+        supportedList.push({branch: 2, leaf: 1,  flags: 0,         featureName: "8-Bit Samples"});
+        supportedList.push({branch: 2, leaf: 2,  flags: 0,         featureName: "32-Bit Samples"});
+        supportedList.push({branch: 2, leaf: 3,  flags: 0,         featureName: "64-Bit Samples"});
+        supportedList.push({branch: 3, leaf: 0,  flags: 1,         featureName: "SFe Compression"});
+        supportedList.push({branch: 3, leaf: 1,  flags: 1,         featureName: "Compression Formats"});
+        supportedList.push({branch: 4, leaf: 0,  flags: 0,         featureName: "Metadata"});
+        supportedList.push({branch: 4, leaf: 1,  flags: 0,         featureName: "Reserved"});
+        supportedList.push({branch: 4, leaf: 2,  flags: 0,         featureName: "Sample ROM"});
+        supportedList.push({branch: 4, leaf: 3,  flags: 0,         featureName: "ROM Emulator"});
+        supportedList.push({branch: 4, leaf: 4,  flags: 0,         featureName: "Reserved"});
+        supportedList.push({branch: 5, leaf: 0,  flags: 0,         featureName: "End of Flags"});
     }
 
     protected verifyFlag(supported: FeatureFlagList, bankFlags: SFeFeatureFlag)

@@ -250,7 +250,7 @@ export function readSamples(
     useXdta = false,
     xdtaChunk: RIFFChunk | undefined = undefined,
     is64Bit = false,
-    sfeMajorVersion = 4
+    sfeMajorVersion = 4,
 ): SoundFontSample[] {
     const samples: SoundFontSample[] = [];
     let index = 0;
