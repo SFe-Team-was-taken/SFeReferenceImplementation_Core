@@ -1,14 +1,17 @@
 import { processEventInternal } from "./process_event";
 import { processTick } from "./process_tick";
-import { assignMIDIPortInternal, loadNewSequenceInternal } from "./song_control";
+import {
+    assignMIDIPortInternal,
+    loadNewSequenceInternal
+} from "./song_control";
 import { setTimeToInternal } from "./play";
-import { SpessaSynthWarn } from "../utils/loggin";
 
 import { MIDI_CHANNEL_COUNT } from "../synthesizer/audio_engine/engine_components/synth_constants";
 import { BasicMIDI } from "../midi/basic_midi";
 import type { SpessaSynthProcessor } from "../synthesizer/processor";
 import { midiControllers, midiMessageTypes } from "../midi/enums";
 import type { SequencerEvent, SequencerEventData } from "./types";
+import { SpessaSynthWarn } from "../utils/loggin";
 
 export class SpessaSynthSequencer {
     /**
@@ -40,6 +43,17 @@ export class SpessaSynthSequencer {
      * Defaults to true.
      */
     public skipToFirstNoteOn = true;
+
+    /**
+     * Indicates if the sequencer has finished playing.
+     */
+    public isFinished = false;
+
+    /**
+     * Indicates if the synthesizer should preload the voices for the newly loaded sequence.
+     * Recommended.
+     */
+    public preload = false;
 
     /**
      * Called when the sequencer calls an event.
@@ -205,9 +219,9 @@ export class SpessaSynthSequencer {
      * @param value the playback rate to set.
      */
     public set playbackRate(value: number) {
-        const time = this.currentTime;
+        const t = this.currentTime;
         this._playbackRate = value;
-        this.currentTime = time;
+        this.recalculateStartTime(t);
     }
 
     /**
@@ -251,11 +265,6 @@ export class SpessaSynthSequencer {
         } else {
             this.playingNotes = [];
             this.callEvent("timeChange", { newTime: time });
-            if (this._midiData.duration === 0) {
-                SpessaSynthWarn("No duration!");
-                this.callEvent("pause", { isFinished: true });
-                return;
-            }
             this.setTimeTo(time);
             this.recalculateStartTime(time);
         }
@@ -274,7 +283,10 @@ export class SpessaSynthSequencer {
      */
     public play() {
         if (!this._midiData) {
-            throw new Error("No songs loaded in the sequencer!");
+            SpessaSynthWarn(
+                "No songs loaded in the sequencer. Ignoring the play call."
+            );
+            return;
         }
 
         // Reset the time
@@ -336,10 +348,15 @@ export class SpessaSynthSequencer {
             return;
         }
         this.stop();
+        // Remove in next breaking release
         this.callEvent("pause", { isFinished });
+        if (isFinished) {
+            this.callEvent("songEnded", {});
+        }
     }
 
     protected songIsFinished() {
+        this.isFinished = true;
         if (this.songs.length === 1) {
             this.pauseInternal(true);
             return;

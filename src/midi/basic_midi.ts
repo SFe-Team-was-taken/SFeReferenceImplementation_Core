@@ -605,12 +605,18 @@ export class BasicMIDI {
                         // Cc change: loop points
                         case midiMessageTypes.controllerChange:
                             switch (e.data[0]) {
+                                // Touhou
                                 case 2:
+                                // RPG Maker
+                                case 111:
+                                // EMIDI/XMI
                                 case 116:
                                     loopStart = e.ticks;
                                     break;
 
+                                // Touhou
                                 case 4:
+                                // EMIDI/XMI
                                 case 117:
                                     if (loopEnd === null) {
                                         loopEnd = e.ticks;
@@ -807,17 +813,11 @@ export class BasicMIDI {
             consoleColors.recognized,
             consoleColors.info
         );
+        // Loop detection
+        loopStart ??= this.firstNoteOn;
 
-        if (loopStart !== null && loopEnd === null) {
-            // Not a loop
-            loopStart = this.firstNoteOn;
+        if (loopEnd === null || loopEnd === 0) {
             loopEnd = this.lastVoiceEventTick;
-        } else {
-            loopStart ??= this.firstNoteOn;
-
-            if (loopEnd === null || loopEnd === 0) {
-                loopEnd = this.lastVoiceEventTick;
-            }
         }
 
         this.loop = { start: loopStart, end: loopEnd };
@@ -952,9 +952,6 @@ export class BasicMIDI {
             );
         }
         this.duration = this.midiTicksToSeconds(this.lastVoiceEventTick);
-        if (this.duration === 0) {
-            throw new Error("The MIDI file no duration.");
-        }
 
         // Invalidate raw name if empty
         if (this.binaryName && this.binaryName.length < 1) {
